@@ -2,16 +2,20 @@ import { createClient } from '@libsql/client/web';
 import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  // Hanya menerima metode POST
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
     const dbUrl = process.env.TURSO_DATABASE_URL;
     const dbToken = process.env.TURSO_AUTH_TOKEN;
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN; // Ambil token Vercel Blob secara eksplisit
 
+    // Validasi Environment Variables
     if (!dbUrl || !dbToken) {
       throw new Error("Kredensial Database gagal dimuat. Pastikan TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN sudah disetting di Vercel.");
+    }
+    if (!blobToken) {
+       throw new Error("Token Vercel Blob tidak ditemukan. Pastikan BLOB_READ_WRITE_TOKEN sudah ada di Environment Variables Vercel.");
     }
 
     const db = createClient({
@@ -61,11 +65,11 @@ export default async function handler(req, res) {
         if (pFileObj && pFileObj.base64) {
             const base64Data = pFileObj.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
             const contentType = pFileObj.base64.substring(5, pFileObj.base64.indexOf(';'));
-            // PERBAIKAN: Suntikkan token Blob secara eksplisit
+            // Pastikan Token Blob disertakan saat eksekusi
             const blob = await put(`Pengumuman_${new Date().getTime()}_${pFileObj.name}`, Buffer.from(base64Data, 'base64'), { 
                 access: 'public', 
-                contentType,
-                token: process.env.BLOB_READ_WRITE_TOKEN 
+                contentType: contentType,
+                token: blobToken 
             });
             pFileUrl = blob.url;
         }
@@ -159,6 +163,7 @@ export default async function handler(req, res) {
       case 'saveBiodata':
         let fd = args[0]; let filesData = args[1];
         
+        // Pengecekan Batas Waktu
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
             if(new Date() > new Date(chkWaktu.rows[0].nilai)) {
@@ -166,27 +171,53 @@ export default async function handler(req, res) {
             }
         }
 
+        // Proses Upload File Baru ke Vercel Blob
         let fUrls = {};
         for(let f of filesData) {
             if(f.base64) {
                const b64Data = f.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
                const cType = f.base64.substring(5, f.base64.indexOf(';'));
-               // PERBAIKAN: Suntikkan token Blob secara eksplisit
+               // Upload dan catat URL barunya, Pastikan parameter token terisi dari env
                const blob = await put(`Berkas/${fd.NIP}_${f.name}`, Buffer.from(b64Data, 'base64'), { 
                    access: 'public', 
                    contentType: cType,
-                   token: process.env.BLOB_READ_WRITE_TOKEN
+                   token: blobToken 
                });
                fUrls[f.name] = blob.url;
             }
         }
 
-        const q = `INSERT INTO biodata (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(nip) DO UPDATE SET nama=excluded.nama, jenjang=excluded.jenjang, nik=excluded.nik, nuptk=excluded.nuptk, tempat_lahir=excluded.tempat_lahir, tanggal_lahir=excluded.tanggal_lahir, jenis_kelamin=excluded.jenis_kelamin, agama=excluded.agama, pangkat_golongan=excluded.pangkat_golongan, jabatan=excluded.jabatan, unit_kerja=excluded.unit_kerja, email=excluded.email, no_hp=excluded.no_hp, alamat=excluded.alamat, status_verifikasi='Belum Verifikasi', catatan='',
-        foto=COALESCE(NULLIF(excluded.foto, ''), biodata.foto), ijazah=COALESCE(NULLIF(excluded.ijazah, ''), biodata.ijazah), sertifikat=COALESCE(NULLIF(excluded.sertifikat, ''), biodata.sertifikat), sk=COALESCE(NULLIF(excluded.sk, ''), biodata.sk), skp=COALESCE(NULLIF(excluded.skp, ''), biodata.skp), sehat=COALESCE(NULLIF(excluded.sehat, ''), biodata.sehat), skck=COALESCE(NULLIF(excluded.skck, ''), biodata.skck), pakta=COALESCE(NULLIF(excluded.pakta, ''), biodata.pakta)`;
+        // Logika Edit File:
+        // Jika fUrls (file baru) ada isinya, maka gunakan itu.
+        // Jika tidak, gunakan fd.old_NamaFile (file lama yang diteruskan dari frontend).
+        // Jika keduanya tidak ada, biarkan kosong ''.
+        const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
+        const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
+        const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
+        const finalSK = fUrls['SK'] || fd.old_SK || '';
+        const finalSKP = fUrls['SKP'] || fd.old_SKP || '';
+        const finalSehat = fUrls['Sehat'] || fd.old_Sehat || '';
+        const finalSKCK = fUrls['SKCK'] || fd.old_SKCK || '';
+        const finalPakta = fUrls['Pakta'] || fd.old_Pakta || '';
+
+        // Gunakan klausa ON CONFLICT untuk menangani Insert (Baru) atau Update (Edit)
+        const q = `INSERT INTO biodata 
+          (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta)
+        VALUES 
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(nip) DO UPDATE SET 
+          nama=excluded.nama, jenjang=excluded.jenjang, nik=excluded.nik, nuptk=excluded.nuptk, tempat_lahir=excluded.tempat_lahir, tanggal_lahir=excluded.tanggal_lahir, jenis_kelamin=excluded.jenis_kelamin, agama=excluded.agama, pangkat_golongan=excluded.pangkat_golongan, jabatan=excluded.jabatan, unit_kerja=excluded.unit_kerja, email=excluded.email, no_hp=excluded.no_hp, alamat=excluded.alamat, status_verifikasi='Belum Verifikasi', catatan='',
+          foto=excluded.foto, ijazah=excluded.ijazah, sertifikat=excluded.sertifikat, sk=excluded.sk, skp=excluded.skp, sehat=excluded.sehat, skck=excluded.skck, pakta=excluded.pakta`;
         
-        await db.execute({ sql: q, args: [fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, fUrls['Foto']||fd.old_Foto||'', fUrls['Ijazah']||fd.old_Ijazah||'', fUrls['Sertifikat']||fd.old_Sertifikat||'', fUrls['SK']||fd.old_SK||'', fUrls['SKP']||fd.old_SKP||'', fUrls['Sehat']||fd.old_Sehat||'', fUrls['SKCK']||fd.old_SKCK||'', fUrls['Pakta']||fd.old_Pakta||''] });
+        await db.execute({ 
+            sql: q, 
+            args: [
+              fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, 
+              fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, 
+              finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta
+            ] 
+        });
+        
         result = "Data berhasil disimpan dan terkirim ke Admin!";
         break;
 
@@ -198,12 +229,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("Vercel Server Error:", error);
-    
-    let errMsg = error.message;
-    if (errMsg.includes("fetching migration jobs") || errMsg.includes("URL")) {
-        errMsg = "Koneksi ke Database gagal. Pastikan TURSO_DATABASE_URL di Vercel diawali dengan 'libsql://' atau 'https://' dan benar.";
-    }
-
-    return res.status(500).json({ error: errMsg });
+    return res.status(500).json({ error: "Terjadi kesalahan sistem: " + error.message });
   }
 }
