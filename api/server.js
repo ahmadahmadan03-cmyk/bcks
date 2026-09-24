@@ -1,33 +1,37 @@
 import { createClient } from '@libsql/client/web';
-import { put } from '@vercel/blob';
+
+// HELPER: Fungsi untuk mengirim file Base64 dari Vercel ke Google Drive via GAS
+async function uploadToDrive(base64Data, filename, isFoto) {
+    const gasUrl = process.env.GAS_UPLOAD_URL;
+    if (!gasUrl) throw new Error("GAS_UPLOAD_URL belum disetting di Vercel Environment Variables.");
+    
+    const response = await fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: base64Data, filename: filename, isFoto: isFoto })
+    });
+    
+    const data = await response.json();
+    if (data.status !== "success") throw new Error("Gagal upload ke Google Drive: " + data.message);
+    return data.url;
+}
 
 export default async function handler(req, res) {
-  // Hanya menerima metode POST
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
     const dbUrl = process.env.TURSO_DATABASE_URL;
     const dbToken = process.env.TURSO_AUTH_TOKEN;
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
-    // Validasi Environment Variables
     if (!dbUrl || !dbToken) {
       throw new Error("Kredensial Database gagal dimuat. Pastikan TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN sudah disetting di Vercel.");
     }
-    if (!blobToken) {
-       throw new Error("Token Vercel Blob tidak ditemukan. Pastikan BLOB_READ_WRITE_TOKEN sudah ada di Environment Variables Vercel.");
-    }
 
-    const db = createClient({
-      url: dbUrl,
-      authToken: dbToken,
-    });
-
+    const db = createClient({ url: dbUrl, authToken: dbToken });
     const { action, args } = req.body;
     let result;
 
     switch (action) {
-      // --- FUNGSI OTENTIKASI ---
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
         const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
@@ -35,7 +39,6 @@ export default async function handler(req, res) {
         else result = { status: "error", message: "NIP atau Password salah!" };
         break;
 
-      // --- FUNGSI PENGATURAN & PENGUMUMAN ---
       case 'getPengaturanGlobal':
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
         const { rows: rPengumuman } = await db.execute("SELECT * FROM pengumuman ORDER BY rowid DESC");
@@ -54,7 +57,6 @@ export default async function handler(req, res) {
         break;
 
       case 'saveBatasWaktu':
-        // Cek dulu apakah pengaturan batas waktu sudah ada
         const cekBatas = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if (cekBatas.rows.length > 0) {
             await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Batas_Waktu'", args: [args[0]] });
@@ -69,15 +71,8 @@ export default async function handler(req, res) {
         let pFileUrl = pOldFile || "";
         
         if (pFileObj && pFileObj.base64) {
-            const base64Data = pFileObj.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
-            const contentType = pFileObj.base64.substring(5, pFileObj.base64.indexOf(';'));
-            const blob = await put(`Pengumuman_${new Date().getTime()}_${pFileObj.name}`, Buffer.from(base64Data, 'base64'), { 
-                access: 'public', 
-                contentType: contentType,
-                token: blobToken,
-                addRandomSuffix: true 
-            });
-            pFileUrl = blob.url;
+            // Upload ke Google Drive
+            pFileUrl = await uploadToDrive(pFileObj.base64, `Pengumuman_${new Date().getTime()}_${pFileObj.name}`, false);
         }
         let tglSkrg = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit'}) + " WIB";
         
@@ -96,7 +91,6 @@ export default async function handler(req, res) {
         result = "Pengumuman berhasil dihapus!";
         break;
 
-      // --- FUNGSI ADMIN USER ---
       case 'getSemuaUsers':
         const { rows: rUsers } = await db.execute("SELECT * FROM users");
         result = rUsers.map(u => ({ row: u.nip, role: u.role, nip: u.nip, nik: u.nik, nama: u.nama }));
@@ -122,11 +116,7 @@ export default async function handler(req, res) {
         let count = 0;
         for (let row of excelData) {
             if (row && row.length >= 3 && row[0]) {
-                let uNip = row[0].toString().trim();
-                let uNik = row[1].toString().trim();
-                let uNama = row[2].toString().trim();
-                
-                // Cek user existing manual untuk menghindari error ON CONFLICT
+                let uNip = row[0].toString().trim(); let uNik = row[1].toString().trim(); let uNama = row[2].toString().trim();
                 let cekUser = await db.execute({ sql: "SELECT nip FROM users WHERE nip=?", args: [uNip] });
                 if(cekUser.rows.length > 0) {
                     await db.execute({ sql: "UPDATE users SET nik=?, nama=?, role='Pegawai' WHERE nip=?", args: [uNik, uNama, uNip] });
@@ -139,7 +129,6 @@ export default async function handler(req, res) {
         result = count + " User berhasil diimpor ke database.";
         break;
 
-      // --- FUNGSI BIODATA & JADWAL ---
       case 'getSemuaBiodata':
       case 'getBiodataPegawai':
         const isSingle = action === 'getBiodataPegawai';
@@ -187,22 +176,16 @@ export default async function handler(req, res) {
             }
         }
 
-        // Proses Upload File Baru ke Vercel Blob
+        // Proses Upload File Baru ke Google Drive via GAS Bridge
         let fUrls = {};
         for(let f of filesData) {
             if(f.base64) {
-               const b64Data = f.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
-               const cType = f.base64.substring(5, f.base64.indexOf(';'));
-               const blob = await put(`Berkas/${fd.NIP}_${f.name}`, Buffer.from(b64Data, 'base64'), { 
-                   access: 'public', 
-                   contentType: cType,
-                   token: blobToken,
-                   addRandomSuffix: true 
-               });
-               fUrls[f.name] = blob.url;
+               const isFoto = (f.name === 'Foto');
+               fUrls[f.name] = await uploadToDrive(f.base64, `${fd.NIP}_${f.name}`, isFoto);
             }
         }
 
+        // Menggunakan file lama jika file baru tidak diupload
         const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
         const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
         const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
@@ -212,11 +195,10 @@ export default async function handler(req, res) {
         const finalSKCK = fUrls['SKCK'] || fd.old_SKCK || '';
         const finalPakta = fUrls['Pakta'] || fd.old_Pakta || '';
 
-        // Cek Keberadaan Data untuk Menentukan INSERT atau UPDATE
+        // Cek Keberadaan Data (INSERT vs UPDATE) agar bebas dari conflict error
         const cekData = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=?", args: [fd.NIP] });
 
         if (cekData.rows.length > 0) {
-            // UPDATE DATA LAMA
             const updateQ = `UPDATE biodata SET 
               nama=?, jenjang=?, nik=?, nuptk=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, agama=?, pangkat_golongan=?, jabatan=?, unit_kerja=?, email=?, no_hp=?, alamat=?, status_verifikasi='Belum Verifikasi', catatan='',
               foto=?, ijazah=?, sertifikat=?, sk=?, skp=?, sehat=?, skck=?, pakta=? 
@@ -232,7 +214,6 @@ export default async function handler(req, res) {
                 ] 
             });
         } else {
-            // INSERT DATA BARU
             const insertQ = `INSERT INTO biodata 
               (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta)
             VALUES 
