@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     const dbUrl = process.env.TURSO_DATABASE_URL;
     const dbToken = process.env.TURSO_AUTH_TOKEN;
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN; // Ambil token Vercel Blob secara eksplisit
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
     // Validasi Environment Variables
     if (!dbUrl || !dbToken) {
@@ -65,11 +65,12 @@ export default async function handler(req, res) {
         if (pFileObj && pFileObj.base64) {
             const base64Data = pFileObj.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
             const contentType = pFileObj.base64.substring(5, pFileObj.base64.indexOf(';'));
-            // Pastikan Token Blob disertakan saat eksekusi
+            // PERBAIKAN: Penambahan addRandomSuffix: true untuk mencegah "Blob already exists"
             const blob = await put(`Pengumuman_${new Date().getTime()}_${pFileObj.name}`, Buffer.from(base64Data, 'base64'), { 
                 access: 'public', 
                 contentType: contentType,
-                token: blobToken 
+                token: blobToken,
+                addRandomSuffix: true 
             });
             pFileUrl = blob.url;
         }
@@ -177,20 +178,18 @@ export default async function handler(req, res) {
             if(f.base64) {
                const b64Data = f.base64.replace(/^data:([A-Za-z-+/]+);base64,/, '');
                const cType = f.base64.substring(5, f.base64.indexOf(';'));
-               // Upload dan catat URL barunya, Pastikan parameter token terisi dari env
+               // PERBAIKAN: Penambahan addRandomSuffix: true untuk mencegah "Blob already exists"
                const blob = await put(`Berkas/${fd.NIP}_${f.name}`, Buffer.from(b64Data, 'base64'), { 
                    access: 'public', 
                    contentType: cType,
-                   token: blobToken 
+                   token: blobToken,
+                   addRandomSuffix: true 
                });
                fUrls[f.name] = blob.url;
             }
         }
 
-        // Logika Edit File:
-        // Jika fUrls (file baru) ada isinya, maka gunakan itu.
-        // Jika tidak, gunakan fd.old_NamaFile (file lama yang diteruskan dari frontend).
-        // Jika keduanya tidak ada, biarkan kosong ''.
+        // Logika Edit File: Menggunakan file lama jika form file dikosongkan.
         const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
         const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
         const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
