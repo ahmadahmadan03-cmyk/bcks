@@ -86,6 +86,7 @@
           <div class="card shadow-lg border-0 rounded-lg mt-5">
             <div class="card-header text-center py-4"><h4 class="font-weight-light my-0">Login Sistem</h4></div>
             <div class="card-body p-4">
+              <div class="alert alert-info small text-center mb-3">Jika ini pertama kali, gunakan NIP: <b>admin</b> & Pass: <b>admin</b> untuk masuk.</div>
               <form id="loginForm" onsubmit="event.preventDefault(); prosesLogin();">
                 <div class="form-floating mb-3"><input class="form-control" id="inputUsername" type="text" placeholder="NIP/Username" required /><label>NIP / Username Admin</label></div>
                 <div class="form-floating mb-3 position-relative">
@@ -135,7 +136,10 @@
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
         <table class="table table-bordered table-hover">
           <thead class="table-primary">
-            <tr><th width="5%" class="text-center"><input type="checkbox" id="chkAll" onclick="toggleAllJadwal(this)"></th><th>NIP</th><th>Nama</th><th>Jadwal & Lokasi Ujian</th><th>Akun CAT</th><th>Aksi</th></tr>
+            <tr>
+              <th width="5%" class="text-center"><input type="checkbox" id="chkAll" onclick="toggleAllJadwal(this)"></th>
+              <th>NIP</th><th>Nama</th><th>Jadwal & Lokasi Ujian</th><th>Akun CAT</th><th>Aksi</th>
+            </tr>
           </thead>
           <tbody id="tbodyAdminJadwal"></tbody>
         </table>
@@ -154,7 +158,9 @@
       </div>
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
         <table class="table table-striped table-hover">
-          <thead class="table-dark"><tr><th>Role</th><th>NIP / Username</th><th>Password / NIK</th><th>Nama</th><th>Aksi</th></tr></thead>
+          <thead class="table-dark">
+            <tr><th>Role</th><th>NIP / Username</th><th>Password / NIK</th><th>Nama</th><th>Aksi</th></tr>
+          </thead>
           <tbody id="tbodyUsers"></tbody>
         </table>
       </div>
@@ -331,34 +337,38 @@
       </div>
     </div>
 
-    <!-- VIEW BARU: PEGAWAI HASIL CAT -->
+    <!-- VIEW BARU: PEGAWAI HASIL CAT (PERSIS SEPERTI GAMBAR) -->
     <div id="pegawai-hasil-cat" class="view-section">
-      <h3 class="mb-4 fw-bold text-primary"><i class="fas fa-bullhorn me-2"></i> Pengumuman Hasil Seleksi Tes Berbasis Komputer</h3>
       
       <!-- Area Pesan Terkunci (Jika toggle admin ditutup) -->
-      <div id="catTerkunciArea" class="hidden">
+      <div id="catTerkunciArea" class="hidden mt-5">
          <div class="alert alert-warning text-center p-5 rounded-4 shadow-sm border-0">
              <i class="fas fa-lock fa-3x mb-3 text-warning"></i>
              <h4 class="fw-bold">Pengumuman Belum Dibuka</h4>
-             <p class="mb-0 text-muted">Hasil tes CAT belum dipublikasikan oleh Panitia Dinas Pendidikan Kabupaten Tangerang.</p>
+             <p class="mb-0 text-muted">Hasil tes CAT belum dipublikasikan oleh Panitia.</p>
          </div>
       </div>
 
       <!-- Area Tampil Hasil -->
-      <div id="catTerbukaArea" class="hidden">
-         <div id="catPesanKelulusan"></div>
+      <div id="catTerbukaArea" class="hidden pt-2 pb-5">
+         <h5 class="mb-5 fw-bold text-dark text-start" style="text-decoration: underline;">PENAMBAHAN MENU PENGUMUMAN HASIL SELEKSI TES BERBASIS KOMPUTER</h5>
+         <div id="cat-status-banner" class="mb-5 ms-3"></div>
          
-         <div class="card shadow-sm border-0 rounded-4" style="max-width: 700px; margin: 0 auto;">
+         <div class="card border border-dark rounded-0 ms-3" style="max-width: 650px;">
            <div class="card-body p-0">
-             <table class="table table-bordered mb-0 text-center align-middle" style="font-size: 1.1rem;">
-                <thead class="table-light">
-                    <tr><th width="15%">NO</th><th class="text-start">JENIS SELEKSI TES BERBASIS KOMPUTER</th><th width="30%">SKOR</th></tr>
+             <table class="table table-bordered border-dark mb-0 align-middle">
+                <thead class="text-center align-middle" style="background-color: transparent;">
+                    <tr>
+                        <th width="10%">NO</th>
+                        <th width="50%">JENIS SELEKSI TES BERBASI<br>KOMPUTER</th>
+                        <th width="40%">SKOR</th>
+                    </tr>
                 </thead>
                 <tbody>
-                   <tr><td>1</td><td class="text-start">Kepribadian</td><td class="fw-bold" id="skor1">-</td></tr>
-                   <tr><td>2</td><td class="text-start">Profesional</td><td class="fw-bold" id="skor2">-</td></tr>
-                   <tr><td>3</td><td class="text-start">Sosial</td><td class="fw-bold" id="skor3">-</td></tr>
-                   <tr class="table-warning fw-bold fs-5"><td colspan="2" class="text-center">Total</td><td id="skorTot">-</td></tr>
+                   <tr><td class="text-center">1</td><td class="ps-3">Kepribadian</td><td class="text-center fw-bold" id="skor1"></td></tr>
+                   <tr><td class="text-center">2</td><td class="ps-3">Profesional</td><td class="text-center fw-bold" id="skor2"></td></tr>
+                   <tr><td class="text-center">3</td><td class="ps-3">Sosial</td><td class="text-center fw-bold" id="skor3"></td></tr>
+                   <tr><td colspan="2" class="text-center fw-bold">Total</td><td class="text-center fw-bold" id="skorTot"></td></tr>
                 </tbody>
              </table>
            </div>
@@ -549,7 +559,6 @@
           globalDaftarPengumuman = res.PengumumanList || [];
           globalBukaPengumumanCAT = res.Buka_Pengumuman_CAT || "false";
 
-          // Set status toggle jika admin sedang buka view CAT
           let switchCat = document.getElementById('switchBukaCAT');
           if(switchCat) switchCat.checked = (globalBukaPengumumanCAT === "true");
 
@@ -579,6 +588,7 @@
           if(areaLnd) { if(htmlPengumuman !== '') { areaLnd.innerHTML = htmlPengumuman; areaLnd.classList.remove('d-none'); } else { areaLnd.classList.add('d-none'); } }
           let areaPeg = document.getElementById('areaPengumumanPegawai');
           if(areaPeg) { if(htmlPengumuman !== '') { areaPeg.innerHTML = htmlPengumuman; areaPeg.classList.remove('d-none'); } else { areaPeg.classList.add('d-none'); } }
+
        })
        .withFailureHandler(err => console.error(err))
        .getPengaturanGlobal();
@@ -769,7 +779,6 @@
        }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); cb.checked = !cb.checked; }).togglePengumumanCAT(val);
     }
 
-
     // ================= FUNGSI PEGAWAI BIODATA & VERIFIKASI =================
     let oldFiles = {};
     function loadPegawaiBio() {
@@ -788,7 +797,6 @@
             
             oldFiles = { old_Foto: res.Foto, old_Ijazah: res.Ijazah, old_Sertifikat: res.Sertifikat, old_SK: res.SK, old_SKP: res.SKP, old_Sehat: res.Sehat, old_SKCK: res.SKCK, old_Pakta: res.Pakta, old_Manajerial: res.Manajerial };
 
-            // PERBAIKAN: Mengunci form jika sudah ada data masuk / sudah pernah dikirim
             if(res.Status_Verifikasi !== '') {
                 formElements.forEach(el => el.disabled = true);
                 btnSubmit.disabled = true;
@@ -811,7 +819,6 @@
                 alertBox.classList.remove('d-none');
             }
           } else { 
-            // Jika data masih kosong tapi waktu expired
             if (isExpired) { 
                 formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Waktu Habis"; 
                 alertBox.className = "alert alert-danger pulse-red"; alertBox.innerHTML = "Maaf batas melengkapi data sudah selesai."; alertBox.classList.remove('d-none'); 
@@ -868,11 +875,9 @@
           else if (res.Status_Verifikasi === 'Belum Verifikasi') { 
               div.innerHTML = `<h3 class="text-warning"><i class="fas fa-clock"></i> Sedang Dalam Antrean Verifikasi</h3><p>Berkas Anda telah diterima dan menunggu pengecekan Admin.</p>`; 
           } 
-          // PERBAIKAN: Pesan tidak lolos verifikasi
           else if (res.Status_Verifikasi === 'Berkas Ditolak' || res.Status_Verifikasi === 'Berkas Tidak Lengkap') { 
               div.innerHTML = `<h3 class="text-danger fw-bold"><i class="fas fa-times-circle"></i> MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI ADMINISTRASI</h3><div class="alert alert-danger mt-3"><b>Catatan Admin:</b> ${res.Catatan}</div>`; 
           } 
-          // PERBAIKAN: Pesan lolos verifikasi
           else if (res.Status_Verifikasi === 'Berkas Lengkap') {
             div.innerHTML = `<h3 class="text-success fw-bold"><i class="fas fa-check-circle"></i> SELAMAT ANDA DINYATAKAN LOLOS SELEKSI ADMINISTRASI</h3><p>Anda dapat mengunduh Kartu Peserta Ujian Anda di bawah ini.</p>`;
             
@@ -894,7 +899,7 @@
         .getBiodataPegawai(nip);
     }
 
-    // FUNGSI BARU: Load Hasil CAT Peserta
+    // ================= FUNGSI BARU: Load Hasil CAT Peserta =================
     function loadPegawaiHasilCAT() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -911,23 +916,20 @@
           document.getElementById('catTerkunciArea').classList.add('d-none');
           document.getElementById('catTerbukaArea').classList.remove('d-none');
 
-          const msgArea = document.getElementById('catPesanKelulusan');
+          const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.className = "alert alert-success fw-bold text-center fs-6 shadow-sm border-0 py-4 mb-4";
-              msgArea.innerHTML = `SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN`;
+              msgArea.innerHTML = `<div class="text-dark fw-bold mb-4" style="line-height: 1.8; text-align: justify;">1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
-              msgArea.className = "alert alert-danger pulse-red fw-bold text-center fs-5 shadow-sm border-0 py-4 mb-4";
-              msgArea.innerHTML = `MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG`;
+              msgArea.innerHTML = `<div class="text-dark fw-bold mb-4" style="line-height: 1.8; text-align: justify;">2. MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
           } else {
-              msgArea.className = "alert alert-secondary fw-bold text-center fs-5 shadow-sm border-0 py-4 mb-4";
-              msgArea.innerHTML = `NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA`;
+              msgArea.innerHTML = `<div class="text-secondary fw-bold mb-4" style="line-height: 1.8; text-align: justify;">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</div>`;
           }
 
-          document.getElementById('skor1').innerText = (res && res.skor_kepribadian) ? res.skor_kepribadian : '-';
-          document.getElementById('skor2').innerText = (res && res.skor_profesional) ? res.skor_profesional : '-';
-          document.getElementById('skor3').innerText = (res && res.skor_sosial) ? res.skor_sosial : '-';
-          document.getElementById('skorTot').innerText = (res && res.skor_total) ? res.skor_total : '-';
+          document.getElementById('skor1').innerText = (res && res.skor_kepribadian) ? res.skor_kepribadian : '';
+          document.getElementById('skor2').innerText = (res && res.skor_profesional) ? res.skor_profesional : '';
+          document.getElementById('skor3').innerText = (res && res.skor_sosial) ? res.skor_sosial : '';
+          document.getElementById('skorTot').innerText = (res && res.skor_total) ? res.skor_total : '';
 
        }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getHasilCATPegawai(nip);
     }
