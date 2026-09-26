@@ -86,7 +86,8 @@
           <div class="card shadow-lg border-0 rounded-lg mt-5">
             <div class="card-header text-center py-4"><h4 class="font-weight-light my-0">Login Sistem</h4></div>
             <div class="card-body p-4">
-             <form id="loginForm" onsubmit="event.preventDefault(); prosesLogin();">
+              <div class="alert alert-info small text-center mb-3">Jika ini pertama kali, gunakan NIP: <b>admin</b> & Pass: <b>admin</b> untuk masuk.</div>
+              <form id="loginForm" onsubmit="event.preventDefault(); prosesLogin();">
                 <div class="form-floating mb-3"><input class="form-control" id="inputUsername" type="text" placeholder="NIP/Username" required /><label>NIP / Username Admin</label></div>
                 <div class="form-floating mb-3 position-relative">
                   <input class="form-control pe-5" id="inputPassword" type="password" placeholder="Password" required />
@@ -129,7 +130,10 @@
     <div id="admin-jadwal" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <h3 class="mb-3 mb-md-0">Pengaturan Jadwal Ujian & Akun CAT</h3>
-        <button class="btn btn-warning btn-sm" onclick="bukaJadwalMassal()"><i class="fas fa-check-square"></i> Atur Jadwal Peserta Terpilih</button>
+        <div class="d-flex gap-2">
+           <button class="btn btn-success btn-sm shadow-sm fw-bold" onclick="exportExcelJadwal()"><i class="fas fa-file-excel"></i> Download Excel</button>
+           <button class="btn btn-warning btn-sm shadow-sm fw-bold" onclick="bukaJadwalMassal()"><i class="fas fa-check-square"></i> Atur Jadwal Peserta Terpilih</button>
+        </div>
       </div>
       <div class="alert alert-info small">Centang kotak pada baris peserta lalu klik tombol <b>Atur Jadwal Peserta Terpilih</b> untuk mengatur secara massal.</div>
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
@@ -271,13 +275,13 @@
             <h5 class="mt-4 mb-3 border-bottom pb-2">Upload Berkas Pendukung (Format PDF/JPG max 2MB)</h5>
             <div class="row" id="fileInputs">
               <div class="col-md-12 mb-3"><label class="fw-bold text-primary">Pas Photo 3x4 (Khusus untuk Kartu Ujian)</label><input type="file" class="form-control bioFile border-primary" data-name="Foto" accept=".jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Pendidikan D-IV/S1/Terakhir</label><input type="file" class="form-control bioFile" data-name="Ijazah" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Ijazah D-IV/S1</label><input type="file" class="form-control bioFile" data-name="Ijazah" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-6 mb-3"><label>Sertifikat Pendidik</label><input type="file" class="form-control bioFile" data-name="Sertifikat" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan Minimal III/c</label><input type="file" class="form-control bioFile" data-name="SK" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan</label><input type="file" class="form-control bioFile" data-name="SK" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-6 mb-3"><label>SKP 2 Tahun Terakhir</label><input type="file" class="form-control bioFile" data-name="SKP" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat, Jasmani, Rohani & Bebas NAPZA</label><input type="file" class="form-control bioFile" data-name="Sehat" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Keterangan Catatan Kepolisian (SKCK)</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Pakta Integritas & Surat Rekomendasi Mengikuti Seleksi dari Atasan & Surat Keterangan Tidak Pernah dikenai Hukuman Disiplin</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat & NAPZA</label><input type="file" class="form-control bioFile" data-name="Sehat" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SKCK</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Pakta Integritas</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-12 mb-3"><label class="fw-bold">Surat Ket. Memiliki Pengalaman Manajerial Paling Singkat 2 (Dua) Tahun</label><input type="file" class="form-control bioFile" data-name="Manajerial" accept=".pdf, .jpg, .jpeg, .png"></div>
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg" id="btnSubmitBio"><i class="fas fa-paper-plane"></i> Simpan dan Kirim</button>
@@ -350,24 +354,27 @@
 
       <!-- Area Tampil Hasil -->
       <div id="catTerbukaArea" class="hidden pt-2 pb-5">
-         <div id="cat-status-banner" class="mb-5"></div>
+         <h5 class="mb-5 fw-bold text-dark text-start" style="text-decoration: underline;">PENAMBAHAN MENU PENGUMUMAN HASIL SELEKSI TES BERBASIS KOMPUTER</h5>
+         <div id="cat-status-banner" class="mb-5 ms-3"></div>
          
-         <div class="table-responsive" style="max-width: 700px;">
-           <table class="table table-bordered border-dark mb-0 align-middle">
-              <thead class="text-center align-middle">
-                  <tr>
-                      <th width="10%">NO</th>
-                      <th width="50%">JENIS SELEKSI TES BERBASIS KOMPUTER</th>
-                      <th width="40%">SKOR</th>
-                  </tr>
-              </thead>
-              <tbody>
-                 <tr><td class="text-center">1</td><td class="ps-3">Kepribadian</td><td class="text-center fw-bold" id="skor1"></td></tr>
-                 <tr><td class="text-center">2</td><td class="ps-3">Profesional</td><td class="text-center fw-bold" id="skor2"></td></tr>
-                 <tr><td class="text-center">3</td><td class="ps-3">Sosial</td><td class="text-center fw-bold" id="skor3"></td></tr>
-                 <tr><td colspan="2" class="text-center fw-bold">Total</td><td class="text-center fw-bold" id="skorTot"></td></tr>
-              </tbody>
-           </table>
+         <div class="card border border-dark rounded-0 ms-3" style="max-width: 650px;">
+           <div class="card-body p-0">
+             <table class="table table-bordered border-dark mb-0 align-middle">
+                <thead class="text-center align-middle" style="background-color: transparent;">
+                    <tr>
+                        <th width="10%">NO</th>
+                        <th width="50%">JENIS SELEKSI TES BERBASIS<br>KOMPUTER</th>
+                        <th width="40%">SKOR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                   <tr><td class="text-center">1</td><td class="ps-3">Kepribadian</td><td class="text-center fw-bold" id="skor1"></td></tr>
+                   <tr><td class="text-center">2</td><td class="ps-3">Profesional</td><td class="text-center fw-bold" id="skor2"></td></tr>
+                   <tr><td class="text-center">3</td><td class="ps-3">Sosial</td><td class="text-center fw-bold" id="skor3"></td></tr>
+                   <tr><td colspan="2" class="text-center fw-bold">Total</td><td class="text-center fw-bold" id="skorTot"></td></tr>
+                </tbody>
+             </table>
+           </div>
          </div>
       </div>
     </div>
@@ -474,7 +481,7 @@
     </div>
   </div>
 
-  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>PTKBS DISDIK 2026</b></div>
+  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>belajar inovasi</b></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -528,6 +535,7 @@
     let globalBatasWaktu = "";
     let globalDaftarPengumuman = [];
     let globalBukaPengumumanCAT = "false";
+    let globalAdminData = [];
 
     document.addEventListener("DOMContentLoaded", function() { 
         checkSession(); 
@@ -687,6 +695,35 @@
     function simpanVerifikasi() { let row = document.getElementById('mRow').value; let status = document.getElementById('mStatus').value; let cat = document.getElementById('mCatatan').value; google.script.run.withSuccessHandler(() => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Berhasil', 'Status verifikasi berhasil disimpan!', 'success'); loadAdminData(); loadAdminDash(); loadAdminJadwal(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).verifyBerkas(row, status, cat); }
     function hapusData() { Swal.fire({ title: 'Yakin hapus biodata peserta ini?', text: "Data yang dihapus tidak dapat dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Hapus!' }).then((result) => { if (result.isConfirmed) { let row = document.getElementById('mRow').value; google.script.run.withSuccessHandler((res) => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Terhapus!', res, 'success'); loadAdminData(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).hapusPeserta(row); } }); }
     function exportExcel() { var wb = XLSX.utils.book_new(); var exportData = globalAdminData.map(function(item) { var obj = Object.assign({}, item); delete obj.row; return obj; }); var ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, "DataPeserta"); XLSX.writeFile(wb, "Data_Peserta_BCKS.xlsx"); }
+    
+    // ================= FUNGSI BARU: EXPORT JADWAL & AKUN =================
+    function exportExcelJadwal() {
+        let exportData = [];
+        let no = 1;
+        globalAdminData.forEach(d => {
+            if (d.Status_Verifikasi === 'Berkas Lengkap') {
+                exportData.push({
+                    "No": no++,
+                    "NIP": d.NIP,
+                    "Nama": d.Nama,
+                    "Lokasi Ujian": d.Lokasi_Ujian || '-',
+                    "Tanggal Ujian": d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-',
+                    "Waktu Ujian": d.Waktu_Ujian || '-',
+                    "Sesi Ujian": d.Sesi_Ujian || '-',
+                    "Username CAT": d.Username_CAT || '-',
+                    "Password CAT": d.Password_CAT || '-'
+                });
+            }
+        });
+
+        if(exportData.length === 0) return Swal.fire('Data Kosong', 'Tidak ada jadwal ujian untuk diekspor.', 'info');
+
+        var ws = XLSX.utils.json_to_sheet(exportData);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Jadwal & Akun CAT");
+        XLSX.writeFile(wb, "Data_Jadwal_Akun_CAT_BCKS.xlsx");
+    }
+
     function toggleAllJadwal(source) { const checkboxes = document.querySelectorAll('.chk-jadwal'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
     function loadAdminJadwal() { showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); globalAdminData = res; const tbody = document.getElementById('tbodyAdminJadwal'); tbody.innerHTML = ''; res.forEach((d, index) => { if (d.Status_Verifikasi === 'Berkas Lengkap') { let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; let wktFormat = formatWaktu24(d.Waktu_Ujian); let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; tbody.innerHTML += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'}</small><br></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; } }); if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata(); }
     function bukaJadwal(index) { let d = globalAdminData[index]; document.getElementById('jRow').value = JSON.stringify([d.row]); document.getElementById('jNama').innerText = "Peserta: " + d.Nama; document.getElementById('jLokasi').value = d.Lokasi_Ujian || "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; let tgl = new Date(d.Tanggal_Ujian); document.getElementById('jTanggal').value = !isNaN(tgl.getTime()) ? tgl.toISOString().split('T')[0] : ""; let wktFormat = formatWaktu24(d.Waktu_Ujian); document.getElementById('jWaktu').value = wktFormat !== '-' ? wktFormat : ""; document.getElementById('jSesi').value = d.Sesi_Ujian || ""; document.getElementById('jUsername').value = d.Username_CAT || ""; document.getElementById('jPassword').value = d.Password_CAT || ""; new bootstrap.Modal(document.getElementById('modalJadwal')).show(); }
@@ -703,7 +740,7 @@
     function showModalUploadUser() { document.getElementById('fileExcelUser').value = ''; new bootstrap.Modal(document.getElementById('modalUploadUser')).show(); }
     function prosesUploadUser() { let fileInput = document.getElementById('fileExcelUser'); if(fileInput.files.length === 0) return Swal.fire('Peringatan', 'Pilih file Excel terlebih dahulu!', 'warning'); let file = fileInput.files[0]; let reader = new FileReader(); reader.onload = function(e) { let workbook = XLSX.read(e.target.result, {type: 'binary'}); let excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); if(excelRows.length > 0 && excelRows[0][0] && excelRows[0][0].toString().toLowerCase().includes('nip')) excelRows.shift(); bootstrap.Modal.getInstance(document.getElementById('modalUploadUser')).hide(); showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).uploadTemplateUsersExcel(excelRows); }; reader.readAsBinaryString(file); }
 
-    // ================= FUNGSI BARU: ADMIN HASIL CAT =================
+    // ================= FUNGSI ADMIN HASIL CAT =================
     function toggleAllCAT(source) { const checkboxes = document.querySelectorAll('.check-cat'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
     
     function loadAdminHasilCAT() {
@@ -895,7 +932,7 @@
         .getBiodataPegawai(nip);
     }
 
-    // ================= FUNGSI BARU: Load Hasil CAT Peserta =================
+    // ================= FUNGSI Load Hasil CAT Peserta =================
     function loadPegawaiHasilCAT() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -915,7 +952,8 @@
           const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</div>`;
+              // PERBAIKAN: Membuat Keterangan Nomor 1 Menjadi BOLD
+              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;"><b>1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</b></div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
               msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">2. MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
           } else {
