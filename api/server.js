@@ -128,10 +128,92 @@ export default async function handler(req, res) {
         result = count + " User berhasil diimpor ke database.";
         break;
 
+      // ==========================================
+      // FUNGSI BARU: MENU PENGUMUMAN HASIL CAT
+      // ==========================================
+      case 'getAdminCAT':
+        // AUTO PATCH: Menambahkan kolom nilai CAT secara otomatis jika belum ada di database
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_kepribadian TEXT"); } catch(e) {}
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_profesional TEXT"); } catch(e) {}
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_sosial TEXT"); } catch(e) {}
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_total TEXT"); } catch(e) {}
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN status_lulus_cat TEXT"); } catch(e) {}
+
+        const resBuka = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
+        let isBuka = resBuka.rows.length > 0 ? resBuka.rows[0].nilai : 'false';
+
+        const reqCAT = await db.execute("SELECT nip, nama, nilai_kepribadian, nilai_profesional, nilai_sosial, nilai_total, status_lulus_cat FROM biodata");
+        result = { isBuka, data: reqCAT.rows.map(r => ({
+           NIP: r.nip, Nama: r.nama, 
+           nilai_kepribadian: r.nilai_kepribadian, nilai_profesional: r.nilai_profesional,
+           nilai_sosial: r.nilai_sosial, nilai_total: r.nilai_total, status_lulus_cat: r.status_lulus_cat
+        }))};
+        break;
+
+      case 'updateSingleCAT':
+        let [nipTarget, field, val] = args;
+        const allowedFields = ['nilai_kepribadian', 'nilai_profesional', 'nilai_sosial', 'nilai_total', 'status_lulus_cat'];
+        if (allowedFields.includes(field)) {
+            await db.execute({ sql: `UPDATE biodata SET ${field} = ? WHERE nip = ?`, args: [val, nipTarget] });
+        }
+        result = "Updated";
+        break;
+
+      case 'setPengumumanCATStatus':
+        const cekCatStatus = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
+        if (cekCatStatus.rows.length > 0) {
+            await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Buka_Pengumuman_CAT'", args: [args[0]] });
+        } else {
+            await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Buka_Pengumuman_CAT', ?)", args: [args[0]] });
+        }
+        result = "Status pengumuman diupdate";
+        break;
+
+      case 'uploadNilaiCATExcel':
+        let rowsExcel = args[0];
+        let cnt = 0;
+        for (let row of rowsExcel) {
+            // Mencocokkan data berdasarkan Nama Peserta atau Username CBT atau NIP
+            let id = row['Nama Peserta'] || row['Username'] || row['NIP'];
+            if (!id) continue;
+            id = id.toString().trim();
+
+            let kepribadian = row['Kepribadian'] || 0;
+            let profesional = row['Profesional'] || 0;
+            let sosial = row['Sosial'] || 0;
+            let total = row['Nilai Akhir'] || row['Total'] || 0;
+
+            let qCek = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=? OR username_cat=? OR nama=? COLLATE NOCASE", args: [id, id, id] });
+            if (qCek.rows.length > 0) {
+                let pNip = qCek.rows[0].nip;
+                await db.execute({ 
+                    sql: "UPDATE biodata SET nilai_kepribadian=?, nilai_profesional=?, nilai_sosial=?, nilai_total=? WHERE nip=?", 
+                    args: [kepribadian, profesional, sosial, total, pNip] 
+                });
+                cnt++;
+            }
+        }
+        result = cnt + " data nilai berhasil diupdate ke database.";
+        break;
+
+      case 'getPegawaiCAT':
+        const rBukaPeg = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
+        let isBukaPeg = rBukaPeg.rows.length > 0 ? rBukaPeg.rows[0].nilai : 'false';
+        let dataCat = null;
+        if (isBukaPeg === 'true') {
+            const reqData = await db.execute({ sql: "SELECT nilai_kepribadian, nilai_profesional, nilai_sosial, nilai_total, status_lulus_cat FROM biodata WHERE nip=?", args: [args[0]] });
+            if (reqData.rows.length > 0) {
+               let r = reqData.rows[0];
+               dataCat = { nilai_kepribadian: r.nilai_kepribadian, nilai_profesional: r.nilai_profesional, nilai_sosial: r.nilai_sosial, nilai_total: r.nilai_total, status_lulus_cat: r.status_lulus_cat };
+            }
+        }
+        result = { isBuka: isBukaPeg, data: dataCat };
+        break;
+      // ==========================================
+
       case 'getSemuaBiodata':
       case 'getBiodataPegawai':
-        // AUTO-PATCH: Tambahkan kolom manajerial jika belum ada di database
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) { /* Abaikan jika kolom sudah ada */ }
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) {}
 
         const isSingle = action === 'getBiodataPegawai';
         let queryBio = isSingle ? { sql: "SELECT * FROM biodata WHERE nip=?", args: [args[0]] } : "SELECT * FROM biodata";
@@ -170,7 +252,6 @@ export default async function handler(req, res) {
       case 'saveBiodata':
         let fd = args[0]; let filesData = args[1];
         
-        // AUTO-PATCH
         try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) {}
 
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
