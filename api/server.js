@@ -71,7 +71,6 @@ export default async function handler(req, res) {
         let pFileUrl = pOldFile || "";
         
         if (pFileObj && pFileObj.base64) {
-            // Upload ke Google Drive
             pFileUrl = await uploadToDrive(pFileObj.base64, `Pengumuman_${new Date().getTime()}_${pFileObj.name}`, false);
         }
         let tglSkrg = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit'}) + " WIB";
@@ -131,6 +130,9 @@ export default async function handler(req, res) {
 
       case 'getSemuaBiodata':
       case 'getBiodataPegawai':
+        // AUTO-PATCH: Tambahkan kolom manajerial jika belum ada di database
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) { /* Abaikan jika kolom sudah ada */ }
+
         const isSingle = action === 'getBiodataPegawai';
         let queryBio = isSingle ? { sql: "SELECT * FROM biodata WHERE nip=?", args: [args[0]] } : "SELECT * FROM biodata";
         const { rows: rBio } = await db.execute(queryBio);
@@ -139,7 +141,7 @@ export default async function handler(req, res) {
            Tanggal_Lahir: r.tanggal_lahir, Jenis_Kelamin: r.jenis_kelamin, Agama: r.agama, Pangkat_Golongan: r.pangkat_golongan,
            Jabatan: r.jabatan, Unit_Kerja: r.unit_kerja, Email: r.email, No_HP: r.no_hp, Alamat: r.alamat,
            Status_Verifikasi: r.status_verifikasi, Catatan: r.catatan, Foto: r.foto, Ijazah: r.ijazah, Sertifikat: r.sertifikat,
-           SK: r.sk, SKP: r.skp, Sehat: r.sehat, SKCK: r.skck, Pakta: r.pakta, Lokasi_Ujian: r.lokasi_ujian,
+           SK: r.sk, SKP: r.skp, Sehat: r.sehat, SKCK: r.skck, Pakta: r.pakta, Manajerial: r.manajerial, Lokasi_Ujian: r.lokasi_ujian,
            Tanggal_Ujian: r.tanggal_ujian, Waktu_Ujian: r.waktu_ujian, Sesi_Ujian: r.sesi_ujian, Username_CAT: r.username_cat, Password_CAT: r.password_cat
         }));
         result = isSingle ? (parsedData[0] || null) : parsedData;
@@ -168,7 +170,9 @@ export default async function handler(req, res) {
       case 'saveBiodata':
         let fd = args[0]; let filesData = args[1];
         
-        // Pengecekan Batas Waktu
+        // AUTO-PATCH
+        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) {}
+
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
             if(new Date() > new Date(chkWaktu.rows[0].nilai)) {
@@ -176,16 +180,17 @@ export default async function handler(req, res) {
             }
         }
 
-        // Proses Upload File Baru ke Google Drive via GAS Bridge
+        // Upload Paralel ke Google Drive
         let fUrls = {};
-        for(let f of filesData) {
-            if(f.base64) {
-               const isFoto = (f.name === 'Foto');
-               fUrls[f.name] = await uploadToDrive(f.base64, `${fd.NIP}_${f.name}`, isFoto);
-            }
-        }
+        const uploadPromises = filesData.filter(f => f.base64).map(async (f) => {
+            const isFoto = (f.name === 'Foto');
+            const url = await uploadToDrive(f.base64, `${fd.NIP}_${f.name}`, isFoto);
+            return { name: f.name, url: url };
+        });
+        
+        const uploadResults = await Promise.all(uploadPromises);
+        uploadResults.forEach(res => { fUrls[res.name] = res.url; });
 
-        // Menggunakan file lama jika file baru tidak diupload
         const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
         const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
         const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
@@ -194,39 +199,24 @@ export default async function handler(req, res) {
         const finalSehat = fUrls['Sehat'] || fd.old_Sehat || '';
         const finalSKCK = fUrls['SKCK'] || fd.old_SKCK || '';
         const finalPakta = fUrls['Pakta'] || fd.old_Pakta || '';
+        const finalManajerial = fUrls['Manajerial'] || fd.old_Manajerial || '';
 
-        // Cek Keberadaan Data (INSERT vs UPDATE) agar bebas dari conflict error
         const cekData = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=?", args: [fd.NIP] });
 
         if (cekData.rows.length > 0) {
             const updateQ = `UPDATE biodata SET 
               nama=?, jenjang=?, nik=?, nuptk=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, agama=?, pangkat_golongan=?, jabatan=?, unit_kerja=?, email=?, no_hp=?, alamat=?, status_verifikasi='Belum Verifikasi', catatan='',
-              foto=?, ijazah=?, sertifikat=?, sk=?, skp=?, sehat=?, skck=?, pakta=? 
+              foto=?, ijazah=?, sertifikat=?, sk=?, skp=?, sehat=?, skck=?, pakta=?, manajerial=? 
               WHERE nip=?`;
             
-            await db.execute({ 
-                sql: updateQ, 
-                args: [
-                  fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, 
-                  fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, 
-                  finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta,
-                  fd.NIP
-                ] 
-            });
+            await db.execute({ sql: updateQ, args: [ fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial, fd.NIP ] });
         } else {
             const insertQ = `INSERT INTO biodata 
-              (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta)
+              (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta, manajerial)
             VALUES 
-              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?)`;
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             
-            await db.execute({ 
-                sql: insertQ, 
-                args: [
-                  fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, 
-                  fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, 
-                  finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta
-                ] 
-            });
+            await db.execute({ sql: insertQ, args: [ fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial ] });
         }
         
         result = "Data berhasil disimpan dan terkirim ke Admin!";
