@@ -67,7 +67,7 @@
     }
     @keyframes pulse-red-animation {
       0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+      70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
       100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
     }
 
@@ -284,7 +284,6 @@
                     <option value="III/d">Penata Tk. I / III/d</option>
                     <option value="IV/a">Pembina / IV/a</option>
                     <option value="IV/b">Pembina Tk. I / IV/b</option>
-                    <option value="IV/C">Pembina Utama Muda / IV/C</option>
                  </select>
               </div>
               <div class="col-md-6 mb-3"><label>Jabatan</label><input type="text" class="form-control" id="bioJabatan" required></div>
@@ -295,19 +294,21 @@
             </div>
             
             <h5 class="mt-4 mb-3 border-bottom pb-2">Upload Berkas Pendukung (Format PDF/JPG max 2MB)</h5>
-            <p class="text-danger small">* Kosongi jika tidak ingin mengubah file yang sudah diupload sebelumnya.</p>
             <div class="row" id="fileInputs">
               <div class="col-md-12 mb-3">
                  <label class="fw-bold text-primary">Pas Photo 3x4 (Khusus untuk Kartu Ujian)</label>
                  <input type="file" class="form-control bioFile border-primary" data-name="Foto" accept=".jpg, .jpeg, .png">
               </div>
-              <div class="col-md-6 mb-3"><label>Pendidikan D-IV/S1</label><input type="file" class="form-control bioFile" data-name="Ijazah" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Ijazah D-IV/S1</label><input type="file" class="form-control bioFile" data-name="Ijazah" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-6 mb-3"><label>Sertifikat Pendidik</label><input type="file" class="form-control bioFile" data-name="Sertifikat" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan Minimal III/c</label><input type="file" class="form-control bioFile" data-name="SK" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan</label><input type="file" class="form-control bioFile" data-name="SK" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-6 mb-3"><label>SKP 2 Tahun Terakhir</label><input type="file" class="form-control bioFile" data-name="SKP" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat & Bebas NAPZA</label><input type="file" class="form-control bioFile" data-name="Sehat" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Keterangan Catatan Kepolisian (SKCK)</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Pakta Integritas & SK Tidak Pernah di Jatuhi Hukuman Disiplin</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat & NAPZA</label><input type="file" class="form-control bioFile" data-name="Sehat" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SKCK</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Pakta Integritas</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
+              
+              <!-- Penambahan Berkas Baru -->
+              <div class="col-md-12 mb-3"><label class="fw-bold">Surat Ket. Memiliki Pengalaman Manajerial Paling Singkat 2 (Dua) Tahun</label><input type="file" class="form-control bioFile" data-name="Manajerial" accept=".pdf, .jpg, .jpeg, .png"></div>
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg" id="btnSubmitBio"><i class="fas fa-paper-plane"></i> Simpan dan Kirim</button>
           </form>
@@ -328,6 +329,7 @@
         </button>
         <div id="areaCetak">
             <div id="kartuPeserta">
+              <!-- HEADER KARTU -->
               <div class="k-header">
                   <img src="https://lh3.googleusercontent.com/d/1IWNmSpAZfMOYOU0uNK2RIiD83Zr63ye9" alt="Logo" crossorigin="anonymous">
                   <div>
@@ -337,6 +339,7 @@
                   </div>
               </div>
               
+              <!-- ISI DATA -->
               <div style="display: flex; align-items: flex-start; gap: 20px;">
                   <div style="width: 3cm; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
                       <div class="k-photo-box">
@@ -346,21 +349,56 @@
                   </div>
                   <div style="flex: 1;">
                       <table class="k-table">
-                          <tr><td style="width: 32%; font-weight: bold;">Nama</td><td colspan="2">: <span id="k_nama"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Jenjang</td><td colspan="2">: <span id="k_jenjang"></span></td></tr>
-                          <tr><td style="font-weight: bold;">NIK</td><td colspan="2">: <span id="k_nik"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Tempat, Tanggal Lahir</td><td colspan="2">: <span id="k_ttl"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Jenis Kelamin</td><td colspan="2">: <span id="k_jk"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Lokasi Ujian</td><td colspan="2">: <span id="k_lokasi" style="color: blue; text-decoration: underline;"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Tanggal Ujian</td><td colspan="2">: <span id="k_tgl"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Waktu Ujian</td><td colspan="2">: <span id="k_waktu"></span></td></tr>
-                          <tr><td style="font-weight: bold;">Sesi Ujian</td><td colspan="2">: <span id="k_sesi"></span></td></tr>
-                          <tr><td rowspan="2" style="font-weight: bold; vertical-align: middle;">Akun</td><td style="width: 25%; font-weight: bold; text-align: center;">Username</td><td>: <span id="k_user"></span></td></tr>
-                          <tr><td style="font-weight: bold; text-align: center;">Password</td><td>: <span id="k_pass"></span></td></tr>
+                          <tr>
+                              <td style="width: 32%; font-weight: bold;">Nama</td>
+                              <td colspan="2">: <span id="k_nama"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Jenjang</td>
+                              <td colspan="2">: <span id="k_jenjang"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">NIK</td>
+                              <td colspan="2">: <span id="k_nik"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Tempat, Tanggal Lahir</td>
+                              <td colspan="2">: <span id="k_ttl"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Jenis Kelamin</td>
+                              <td colspan="2">: <span id="k_jk"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Lokasi Ujian</td>
+                              <td colspan="2">: <span id="k_lokasi" style="color: blue; text-decoration: underline;"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Tanggal Ujian</td>
+                              <td colspan="2">: <span id="k_tgl"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Waktu Ujian</td>
+                              <td colspan="2">: <span id="k_waktu"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold;">Sesi Ujian</td>
+                              <td colspan="2">: <span id="k_sesi"></span></td>
+                          </tr>
+                          <tr>
+                              <td rowspan="2" style="font-weight: bold; vertical-align: middle;">Akun</td>
+                              <td style="width: 25%; font-weight: bold; text-align: center;">Username</td>
+                              <td>: <span id="k_user"></span></td>
+                          </tr>
+                          <tr>
+                              <td style="font-weight: bold; text-align: center;">Password</td>
+                              <td>: <span id="k_pass"></span></td>
+                          </tr>
                       </table>
                   </div>
               </div>
               
+              <!-- PERHATIAN -->
               <div style="margin-top: 30px; text-align: left;">
                   <b style="font-size: 12pt;">Perhatian:</b>
                   <ol style="margin-top: 10px; font-size: 11pt; line-height: 1.5; padding-left: 25px;">
@@ -387,9 +425,14 @@
         <div class="modal-body">
           <input type="hidden" id="mRow">
           <label>Status Verifikasi</label>
-          <select id="mStatus" class="form-select mb-3"><option>Belum Verifikasi</option><option>Berkas Lengkap</option><option>Berkas Tidak Lengkap</option></select>
+          <!-- Perubahan Teks Admin menjadi "Berkas Ditolak" -->
+          <select id="mStatus" class="form-select mb-3">
+             <option>Belum Verifikasi</option>
+             <option>Berkas Lengkap</option>
+             <option>Berkas Ditolak</option>
+          </select>
           <label>Catatan untuk Peserta</label>
-          <textarea id="mCatatan" class="form-control" rows="3" placeholder="Contoh: SKP kurang jelas, mohon upload ulang."></textarea>
+          <textarea id="mCatatan" class="form-control" rows="3" placeholder="Tulis alasan ditolak / catatan lain..."></textarea>
           <h6 class="mt-3">Lampiran Peserta:</h6>
           <ul id="mLinks" class="list-unstyled"></ul>
         </div>
@@ -488,13 +531,10 @@
     </div>
   </div>
 
-  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>PTKBS DISDIK 2026</b></div>
+  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>belajar inovasi</b></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // =================================================================================
-    // PROXY API UNTUK MENGIRIM PERMINTAAN KE VERCEL NATIVE
-    // =================================================================================
     const google = {
       script: {
         run: {
@@ -528,7 +568,7 @@
               try { 
                   data = JSON.parse(text); 
               } catch(e) { 
-                  throw new Error('Server (Vercel) merespons dengan kesalahan ' + res.status + '. Pastikan file tidak terlalu besar.'); 
+                  throw new Error(`Server (Vercel) gagal merespons. Endpoint mengembalikan kode status ${res.status}.`); 
               }
               
               if (!res.ok) throw new Error(data.error || 'Server error');
@@ -843,7 +883,8 @@
           const tbody = document.getElementById('tbodyAdminData');
           tbody.innerHTML = '';
           res.forEach((d, index) => {
-            let badge = d.Status_Verifikasi === 'Berkas Lengkap' ? 'bg-success' : (d.Status_Verifikasi === 'Berkas Tidak Lengkap' ? 'bg-danger' : 'bg-warning text-dark');
+            // Perubahan Badge Color Admin
+            let badge = d.Status_Verifikasi === 'Berkas Lengkap' ? 'bg-success' : (d.Status_Verifikasi === 'Berkas Ditolak' || d.Status_Verifikasi === 'Berkas Tidak Lengkap' ? 'bg-danger' : 'bg-warning text-dark');
             tbody.innerHTML += `
               <tr>
                 <td>${d.NIP}</td><td>${d.Nama}<br><small class="text-muted">${d.Jenjang || '-'}</small></td>
@@ -861,7 +902,7 @@
       document.getElementById('mNama').innerText = d.Nama; document.getElementById('mRow').value = d.row;
       document.getElementById('mStatus').value = d.Status_Verifikasi || "Belum Verifikasi"; document.getElementById('mCatatan').value = d.Catatan || "";
       
-      let files = ['Foto','Ijazah','Sertifikat','SK','SKP','Sehat','SKCK','Pakta']; let linksHTML = '';
+      let files = ['Foto','Ijazah','Sertifikat','SK','SKP','Sehat','SKCK','Pakta','Manajerial']; let linksHTML = '';
       files.forEach(f => {
         if(d[f]) linksHTML += `<li><i class="fas fa-link"></i> <a href="${d[f]}" target="_blank">${f}</a></li>`;
         else linksHTML += `<li><i class="fas fa-times text-danger"></i> ${f} (Belum Upload)</li>`;
@@ -1013,17 +1054,43 @@
           let formElements = document.getElementById('formBiodata').querySelectorAll('input, select, textarea, button'); let btnSubmit = document.getElementById('btnSubmitBio');
           const alertBox = document.getElementById('alertBio'); alertBox.classList.add('d-none'); formElements.forEach(el => el.disabled = false); btnSubmit.innerText = "Simpan dan Kirim";
           let isExpired = false; if(globalBatasWaktu && globalBatasWaktu !== "") { isExpired = new Date() > new Date(globalBatasWaktu); }
+          
           if(res) {
             document.getElementById('bioJenjang').value = res.Jenjang || "SD"; document.getElementById('bioNIK').value = res.NIK; document.getElementById('bioNUPTK').value = res.NUPTK;
             document.getElementById('bioTempat').value = res.Tempat_Lahir; let tgl = new Date(res.Tanggal_Lahir); if(!isNaN(tgl.getTime())) document.getElementById('bioTgl').value = tgl.toISOString().split('T')[0];
             document.getElementById('bioJK').value = res.Jenis_Kelamin; document.getElementById('bioAgama').value = res.Agama; document.getElementById('bioGol').value = res.Pangkat_Golongan; document.getElementById('bioJabatan').value = res.Jabatan; document.getElementById('bioUnit').value = res.Unit_Kerja; document.getElementById('bioEmail').value = res.Email; document.getElementById('bioHP').value = res.No_HP; document.getElementById('bioAlamat').value = res.Alamat;
-            oldFiles = { old_Foto: res.Foto, old_Ijazah: res.Ijazah, old_Sertifikat: res.Sertifikat, old_SK: res.SK, old_SKP: res.SKP, old_Sehat: res.Sehat, old_SKCK: res.SKCK, old_Pakta: res.Pakta };
+            
+            oldFiles = { old_Foto: res.Foto, old_Ijazah: res.Ijazah, old_Sertifikat: res.Sertifikat, old_SK: res.SK, old_SKP: res.SKP, old_Sehat: res.Sehat, old_SKCK: res.SKCK, old_Pakta: res.Pakta, old_Manajerial: res.Manajerial };
 
-            if(res.Status_Verifikasi === 'Berkas Lengkap') { formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Data Dinyatakan Lengkap / Disetujui"; alertBox.className = "alert alert-success"; alertBox.innerHTML = "<b>Info:</b> Formulir Anda telah disetujui secara permanen."; alertBox.classList.remove('d-none'); } 
-            else if (isExpired) { formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Waktu Habis"; alertBox.className = "alert alert-danger pulse-red"; alertBox.innerHTML = "Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya"; alertBox.classList.remove('d-none'); } 
-            else if (res.Status_Verifikasi === 'Berkas Tidak Lengkap') { alertBox.className = "alert alert-danger"; alertBox.innerHTML = "<b>Perhatian:</b> Berkas Tidak Lengkap! Catatan Admin: " + res.Catatan; alertBox.classList.remove('d-none'); } 
-            else if (res.Status_Verifikasi === 'Belum Verifikasi') { alertBox.className = "alert alert-info"; alertBox.innerHTML = "<b>Info:</b> Menunggu antrean verifikasi Admin. Anda masih dapat mengupdate data."; alertBox.classList.remove('d-none'); }
-          } else { if (isExpired) { formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Waktu Habis"; alertBox.className = "alert alert-danger pulse-red"; alertBox.innerHTML = "Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya"; alertBox.classList.remove('d-none'); } }
+            // PERBAIKAN: Mengunci form jika sudah ada data masuk / sudah pernah dikirim
+            if(res.Status_Verifikasi !== '') {
+                formElements.forEach(el => el.disabled = true);
+                btnSubmit.disabled = true;
+                
+                if(res.Status_Verifikasi === 'Berkas Lengkap') { 
+                    btnSubmit.innerText = "Berkas Disetujui"; 
+                    alertBox.className = "alert alert-success"; 
+                    alertBox.innerHTML = "<b>SELAMAT ANDA DINYATAKAN LOLOS SELEKSI ADMINISTRASI</b>"; 
+                } 
+                else if (res.Status_Verifikasi === 'Berkas Ditolak' || res.Status_Verifikasi === 'Berkas Tidak Lengkap') { 
+                    btnSubmit.innerText = "Berkas Ditolak"; 
+                    alertBox.className = "alert alert-danger pulse-red"; 
+                    alertBox.innerHTML = "<b>MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI ADMINISTRASI</b><br>Catatan Admin: " + res.Catatan; 
+                } 
+                else { 
+                    btnSubmit.innerText = "Menunggu Verifikasi"; 
+                    alertBox.className = "alert alert-info"; 
+                    alertBox.innerHTML = "<b>Info:</b> Data Anda sudah terkirim dan menunggu antrean verifikasi. Anda tidak dapat mengubah data kembali."; 
+                }
+                alertBox.classList.remove('d-none');
+            }
+          } else { 
+            // Jika data masih kosong tapi waktu expired
+            if (isExpired) { 
+                formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Waktu Habis"; 
+                alertBox.className = "alert alert-danger pulse-red"; alertBox.innerHTML = "Maaf batas melengkapi data sudah selesai."; alertBox.classList.remove('d-none'); 
+            } 
+          }
         })
         .withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); })
         .getBiodataPegawai(nip);
@@ -1068,11 +1135,20 @@
       google.script.run
         .withSuccessHandler(res => {
           showSpinner(false); const div = document.getElementById('verifikasiStatus'); const kartu = document.getElementById('kartuPesertaArea'); kartu.classList.add('d-none');
-          if(!res || res.Status_Verifikasi === '') { div.innerHTML = `<h3 class="text-secondary">Anda belum mengisi form pendaftaran.</h3>`; } 
-          else if (res.Status_Verifikasi === 'Belum Verifikasi') { div.innerHTML = `<h3 class="text-warning"><i class="fas fa-clock"></i> Sedang Dalam Antrean Verifikasi</h3><p>Berkas Anda telah diterima dan menunggu pengecekan Admin.</p>`; } 
-          else if (res.Status_Verifikasi === 'Berkas Tidak Lengkap') { div.innerHTML = `<h3 class="text-danger"><i class="fas fa-times-circle"></i> Berkas Tidak Lengkap</h3><div class="alert alert-danger mt-3"><b>Catatan Admin:</b> ${res.Catatan}</div><p>Silahkan perbaiki data Anda pada menu Biodata.</p>`; } 
+          
+          if(!res || res.Status_Verifikasi === '') { 
+              div.innerHTML = `<h3 class="text-secondary">Anda belum mengisi form pendaftaran.</h3>`; 
+          } 
+          else if (res.Status_Verifikasi === 'Belum Verifikasi') { 
+              div.innerHTML = `<h3 class="text-warning"><i class="fas fa-clock"></i> Sedang Dalam Antrean Verifikasi</h3><p>Berkas Anda telah diterima dan menunggu pengecekan Admin.</p>`; 
+          } 
+          // PERBAIKAN: Pesan tidak lolos verifikasi
+          else if (res.Status_Verifikasi === 'Berkas Ditolak' || res.Status_Verifikasi === 'Berkas Tidak Lengkap') { 
+              div.innerHTML = `<h3 class="text-danger fw-bold"><i class="fas fa-times-circle"></i> MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI ADMINISTRASI</h3><div class="alert alert-danger mt-3"><b>Catatan Admin:</b> ${res.Catatan}</div>`; 
+          } 
+          // PERBAIKAN: Pesan lolos verifikasi
           else if (res.Status_Verifikasi === 'Berkas Lengkap') {
-            div.innerHTML = `<h3 class="text-success"><i class="fas fa-check-circle"></i> Selamat! Berkas Dinyatakan LENGKAP</h3><p>Anda dapat mengunduh Kartu Peserta Ujian Anda di bawah ini.</p>`;
+            div.innerHTML = `<h3 class="text-success fw-bold"><i class="fas fa-check-circle"></i> SELAMAT ANDA DINYATAKAN LOLOS SELEKSI ADMINISTRASI</h3><p>Anda dapat mengunduh Kartu Peserta Ujian Anda di bawah ini.</p>`;
             
             if (res.Foto && res.Foto !== "") { document.getElementById('k_foto').src = res.Foto; document.getElementById('k_foto').style.display = 'block'; document.getElementById('k_foto_text').style.display = 'none'; } 
             else { document.getElementById('k_foto').style.display = 'none'; document.getElementById('k_foto_text').style.display = 'block'; }
