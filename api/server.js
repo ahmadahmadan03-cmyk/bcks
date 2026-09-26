@@ -1,6 +1,5 @@
 import { createClient } from '@libsql/client/web';
 
-// HELPER: Fungsi untuk mengirim file Base64 dari Vercel ke Google Drive via GAS
 async function uploadToDrive(base64Data, filename, isFoto) {
     const gasUrl = process.env.GAS_UPLOAD_URL;
     if (!gasUrl) throw new Error("GAS_UPLOAD_URL belum disetting di Vercel Environment Variables.");
@@ -31,6 +30,14 @@ export default async function handler(req, res) {
     const { action, args } = req.body;
     let result;
 
+    // AUTO-PATCH: Tambahkan kolom CAT di tabel users otomatis jika belum ada
+    try { await db.execute("ALTER TABLE users ADD COLUMN skor_kepribadian TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE users ADD COLUMN skor_profesional TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE users ADD COLUMN skor_sosial TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE users ADD COLUMN skor_total TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE users ADD COLUMN status_lulus_cat TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
+
     switch (action) {
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
@@ -43,11 +50,14 @@ export default async function handler(req, res) {
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
         const { rows: rPengumuman } = await db.execute("SELECT * FROM pengumuman ORDER BY rowid DESC");
         
-        let config = { Batas_Waktu: "", PengumumanList: [] };
+        let config = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false" };
         rPeng.forEach(row => {
            if(row.kunci === "Batas_Waktu" && row.nilai) {
               let tgl = new Date(row.nilai);
               if(!isNaN(tgl.getTime())) config.Batas_Waktu = tgl.toISOString();
+           }
+           if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) {
+              config.Buka_Pengumuman_CAT = row.nilai;
            }
         });
         rPengumuman.forEach(p => {
@@ -58,31 +68,30 @@ export default async function handler(req, res) {
 
       case 'saveBatasWaktu':
         const cekBatas = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Batas_Waktu'");
-        if (cekBatas.rows.length > 0) {
-            await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Batas_Waktu'", args: [args[0]] });
-        } else {
-            await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Batas_Waktu', ?)", args: [args[0]] });
-        }
+        if (cekBatas.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Batas_Waktu'", args: [args[0]] });
+        else await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Batas_Waktu', ?)", args: [args[0]] });
         result = "Pengaturan batas waktu berhasil disimpan!";
+        break;
+
+      case 'togglePengumumanCAT':
+        const cekToggle = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
+        if (cekToggle.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Buka_Pengumuman_CAT'", args: [args[0]] });
+        else await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Buka_Pengumuman_CAT', ?)", args: [args[0]] });
+        result = "Status tayang pengumuman CAT berhasil diubah!";
         break;
 
       case 'savePengumuman':
         let [pId, pJudul, pTeks, pFileObj, pOldFile, pActionRow] = args;
         let pFileUrl = pOldFile || "";
-        
-        if (pFileObj && pFileObj.base64) {
-            pFileUrl = await uploadToDrive(pFileObj.base64, `Pengumuman_${new Date().getTime()}_${pFileObj.name}`, false);
-        }
+        if (pFileObj && pFileObj.base64) pFileUrl = await uploadToDrive(pFileObj.base64, `Pengumuman_${new Date().getTime()}_${pFileObj.name}`, false);
         let tglSkrg = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit'}) + " WIB";
         
-        if (pActionRow && pActionRow !== "null" && pActionRow !== "") {
-           await db.execute({ sql: "UPDATE pengumuman SET judul=?, teks=?, file_url=? WHERE id=?", args: [pJudul, pTeks, pFileUrl, pActionRow] });
-           result = "Pengumuman berhasil diperbarui!";
-        } else {
+        if (pActionRow && pActionRow !== "null" && pActionRow !== "") await db.execute({ sql: "UPDATE pengumuman SET judul=?, teks=?, file_url=? WHERE id=?", args: [pJudul, pTeks, pFileUrl, pActionRow] });
+        else {
            let newId = "PENG-" + new Date().getTime();
            await db.execute({ sql: "INSERT INTO pengumuman (id, tanggal, judul, teks, file_url) VALUES (?, ?, ?, ?, ?)", args: [newId, tglSkrg, pJudul, pTeks, pFileUrl] });
-           result = "Pengumuman baru berhasil ditambahkan!";
         }
+        result = "Pengumuman berhasil disimpan!";
         break;
 
       case 'deletePengumuman':
@@ -92,7 +101,11 @@ export default async function handler(req, res) {
 
       case 'getSemuaUsers':
         const { rows: rUsers } = await db.execute("SELECT * FROM users");
-        result = rUsers.map(u => ({ row: u.nip, role: u.role, nip: u.nip, nik: u.nik, nama: u.nama }));
+        result = rUsers.map(u => ({ 
+            row: u.nip, role: u.role, nip: u.nip, nik: u.nik, nama: u.nama, 
+            skor_kepribadian: u.skor_kepribadian || '', skor_profesional: u.skor_profesional || '', 
+            skor_sosial: u.skor_sosial || '', skor_total: u.skor_total || '', status_lulus_cat: u.status_lulus_cat || '' 
+        }));
         break;
       
       case 'addUserDB':
@@ -111,110 +124,51 @@ export default async function handler(req, res) {
         break;
 
       case 'uploadTemplateUsersExcel':
-        let excelData = args[0];
-        let count = 0;
+        let excelData = args[0]; let countUser = 0;
         for (let row of excelData) {
             if (row && row.length >= 3 && row[0]) {
                 let uNip = row[0].toString().trim(); let uNik = row[1].toString().trim(); let uNama = row[2].toString().trim();
                 let cekUser = await db.execute({ sql: "SELECT nip FROM users WHERE nip=?", args: [uNip] });
-                if(cekUser.rows.length > 0) {
-                    await db.execute({ sql: "UPDATE users SET nik=?, nama=?, role='Pegawai' WHERE nip=?", args: [uNik, uNama, uNip] });
-                } else {
-                    await db.execute({ sql: "INSERT INTO users (role, nip, nik, nama) VALUES ('Pegawai', ?, ?, ?)", args: [uNip, uNik, uNama] });
-                }
-                count++;
+                if(cekUser.rows.length > 0) await db.execute({ sql: "UPDATE users SET nik=?, nama=?, role='Pegawai' WHERE nip=?", args: [uNik, uNama, uNip] });
+                else await db.execute({ sql: "INSERT INTO users (role, nip, nik, nama) VALUES ('Pegawai', ?, ?, ?)", args: [uNip, uNik, uNama] });
+                countUser++;
             }
         }
-        result = count + " User berhasil diimpor ke database.";
+        result = countUser + " User berhasil diimpor ke database.";
         break;
 
-      // ==========================================
-      // FUNGSI BARU: MENU PENGUMUMAN HASIL CAT
-      // ==========================================
-      case 'getAdminCAT':
-        // AUTO PATCH: Menambahkan kolom nilai CAT secara otomatis jika belum ada di database
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_kepribadian TEXT"); } catch(e) {}
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_profesional TEXT"); } catch(e) {}
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_sosial TEXT"); } catch(e) {}
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN nilai_total TEXT"); } catch(e) {}
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN status_lulus_cat TEXT"); } catch(e) {}
-
-        const resBuka = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
-        let isBuka = resBuka.rows.length > 0 ? resBuka.rows[0].nilai : 'false';
-
-        const reqCAT = await db.execute("SELECT nip, nama, nilai_kepribadian, nilai_profesional, nilai_sosial, nilai_total, status_lulus_cat FROM biodata");
-        result = { isBuka, data: reqCAT.rows.map(r => ({
-           NIP: r.nip, Nama: r.nama, 
-           nilai_kepribadian: r.nilai_kepribadian, nilai_profesional: r.nilai_profesional,
-           nilai_sosial: r.nilai_sosial, nilai_total: r.nilai_total, status_lulus_cat: r.status_lulus_cat
-        }))};
-        break;
-
-      case 'updateSingleCAT':
-        let [nipTarget, field, val] = args;
-        const allowedFields = ['nilai_kepribadian', 'nilai_profesional', 'nilai_sosial', 'nilai_total', 'status_lulus_cat'];
-        if (allowedFields.includes(field)) {
-            await db.execute({ sql: `UPDATE biodata SET ${field} = ? WHERE nip = ?`, args: [val, nipTarget] });
-        }
-        result = "Updated";
-        break;
-
-      case 'setPengumumanCATStatus':
-        const cekCatStatus = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
-        if (cekCatStatus.rows.length > 0) {
-            await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Buka_Pengumuman_CAT'", args: [args[0]] });
-        } else {
-            await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Buka_Pengumuman_CAT', ?)", args: [args[0]] });
-        }
-        result = "Status pengumuman diupdate";
-        break;
-
-      case 'uploadNilaiCATExcel':
-        let rowsExcel = args[0];
-        let cnt = 0;
-        for (let row of rowsExcel) {
-            // Mencocokkan data berdasarkan Nama Peserta atau Username CBT atau NIP
-            let id = row['Nama Peserta'] || row['Username'] || row['NIP'];
-            if (!id) continue;
-            id = id.toString().trim();
-
-            let kepribadian = row['Kepribadian'] || 0;
-            let profesional = row['Profesional'] || 0;
-            let sosial = row['Sosial'] || 0;
-            let total = row['Nilai Akhir'] || row['Total'] || 0;
-
-            let qCek = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=? OR username_cat=? OR nama=? COLLATE NOCASE", args: [id, id, id] });
-            if (qCek.rows.length > 0) {
-                let pNip = qCek.rows[0].nip;
+      // FUNGSI BARU: Upload Excel Nilai CAT
+      case 'uploadExcelNilaiCAT':
+        let excelNilai = args[0]; let countNilai = 0;
+        for (let row of excelNilai) {
+            if (row && row.length >= 2 && row[0]) {
+                let uNip = row[0].toString().trim();
+                let kep = row[1] ? row[1].toString().trim() : '0';
+                let prof = row[2] ? row[2].toString().trim() : '0';
+                let sos = row[3] ? row[3].toString().trim() : '0';
+                let tot = row[4] ? row[4].toString().trim() : '0';
+                
                 await db.execute({ 
-                    sql: "UPDATE biodata SET nilai_kepribadian=?, nilai_profesional=?, nilai_sosial=?, nilai_total=? WHERE nip=?", 
-                    args: [kepribadian, profesional, sosial, total, pNip] 
+                    sql: "UPDATE users SET skor_kepribadian=?, skor_profesional=?, skor_sosial=?, skor_total=? WHERE nip=?", 
+                    args: [kep, prof, sos, tot, uNip] 
                 });
-                cnt++;
+                countNilai++;
             }
         }
-        result = cnt + " data nilai berhasil diupdate ke database.";
+        result = countNilai + " Data nilai peserta berhasil diimpor.";
         break;
 
-      case 'getPegawaiCAT':
-        const rBukaPeg = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Buka_Pengumuman_CAT'");
-        let isBukaPeg = rBukaPeg.rows.length > 0 ? rBukaPeg.rows[0].nilai : 'false';
-        let dataCat = null;
-        if (isBukaPeg === 'true') {
-            const reqData = await db.execute({ sql: "SELECT nilai_kepribadian, nilai_profesional, nilai_sosial, nilai_total, status_lulus_cat FROM biodata WHERE nip=?", args: [args[0]] });
-            if (reqData.rows.length > 0) {
-               let r = reqData.rows[0];
-               dataCat = { nilai_kepribadian: r.nilai_kepribadian, nilai_profesional: r.nilai_profesional, nilai_sosial: r.nilai_sosial, nilai_total: r.nilai_total, status_lulus_cat: r.status_lulus_cat };
-            }
+      // FUNGSI BARU: Set Lulus / Tidak Lulus Massal
+      case 'setLulusCATMassal':
+        let nipsLulus = args[0]; let statusLulus = args[1];
+        for (let n of nipsLulus) {
+            await db.execute({ sql: "UPDATE users SET status_lulus_cat=? WHERE nip=?", args: [statusLulus, n] });
         }
-        result = { isBuka: isBukaPeg, data: dataCat };
+        result = `Berhasil update status ${statusLulus} untuk ${nipsLulus.length} peserta.`;
         break;
-      // ==========================================
 
       case 'getSemuaBiodata':
       case 'getBiodataPegawai':
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) {}
-
         const isSingle = action === 'getBiodataPegawai';
         let queryBio = isSingle ? { sql: "SELECT * FROM biodata WHERE nip=?", args: [args[0]] } : "SELECT * FROM biodata";
         const { rows: rBio } = await db.execute(queryBio);
@@ -227,6 +181,13 @@ export default async function handler(req, res) {
            Tanggal_Ujian: r.tanggal_ujian, Waktu_Ujian: r.waktu_ujian, Sesi_Ujian: r.sesi_ujian, Username_CAT: r.username_cat, Password_CAT: r.password_cat
         }));
         result = isSingle ? (parsedData[0] || null) : parsedData;
+        break;
+
+      // FUNGSI BARU: Ambil Nilai CAT untuk Dashboard Peserta
+      case 'getHasilCATPegawai':
+        const rCAT = await db.execute({ sql: "SELECT * FROM users WHERE nip=?", args: [args[0]] });
+        if(rCAT.rows.length > 0) result = rCAT.rows[0];
+        else result = null;
         break;
 
       case 'verifyBerkas':
@@ -252,8 +213,6 @@ export default async function handler(req, res) {
       case 'saveBiodata':
         let fd = args[0]; let filesData = args[1];
         
-        try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e) {}
-
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
             if(new Date() > new Date(chkWaktu.rows[0].nilai)) {
@@ -261,7 +220,6 @@ export default async function handler(req, res) {
             }
         }
 
-        // Upload Paralel ke Google Drive
         let fUrls = {};
         const uploadPromises = filesData.filter(f => f.base64).map(async (f) => {
             const isFoto = (f.name === 'Foto');
