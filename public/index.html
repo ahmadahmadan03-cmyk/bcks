@@ -158,8 +158,28 @@
           <button class="btn btn-success btn-sm" onclick="showModalUploadUser()"><i class="fas fa-file-excel"></i> Upload Template Excel</button>
         </div>
       </div>
+      
+      <!-- PERBAIKAN: Filter Tabel Kelola User -->
+      <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
+         <div class="col-md-6 d-flex align-items-center gap-2 mb-2 mb-md-0">
+             <span class="small fw-bold text-muted text-nowrap">Tampilkan:</span>
+             <select id="limitUsers" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterUsers()">
+                 <option value="10">10 Baris</option>
+                 <option value="50">50 Baris</option>
+                 <option value="100">100 Baris</option>
+                 <option value="ALL" selected>Semua</option>
+             </select>
+         </div>
+         <div class="col-md-6">
+             <div class="input-group input-group-sm shadow-sm">
+                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                 <input type="text" id="filterUsers" class="form-control border-start-0" placeholder="Cari Nama / NIP..." oninput="applyFilterUsers()">
+             </div>
+         </div>
+      </div>
+      
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
-        <table class="table table-striped table-hover">
+        <table class="table table-striped table-hover align-middle">
           <thead class="table-dark">
             <tr><th>Role</th><th>NIP / Username</th><th>Password / NIK</th><th>Nama</th><th>Aksi</th></tr>
           </thead>
@@ -168,7 +188,7 @@
       </div>
     </div>
 
-    <!-- VIEW BARU: ADMIN HASIL CAT -->
+    <!-- VIEW: ADMIN HASIL CAT -->
     <div id="admin-hasil-cat" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <h3 class="mb-3 mb-md-0">Pengumuman & Nilai Hasil CAT</h3>
@@ -181,16 +201,23 @@
         </div>
       </div>
       
-      <!-- PERBAIKAN: Layout Filter Pencarian & Tombol Aksi -->
-      <div class="row mb-3 align-items-center">
-         <div class="col-md-6 d-flex gap-2 mb-2 mb-md-0">
-             <button class="btn btn-primary btn-sm shadow-sm" onclick="setLulusMassalCAT('LULUS')"><i class="fas fa-check"></i> Set Lulus Terpilih</button>
-             <button class="btn btn-danger btn-sm shadow-sm" onclick="setLulusMassalCAT('TIDAK LULUS')"><i class="fas fa-times"></i> Set Tidak Lulus Terpilih</button>
+      <!-- PERBAIKAN: Layout Filter Pencarian & Jumlah Baris Hasil CAT -->
+      <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
+         <div class="col-md-7 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
+             <button class="btn btn-primary btn-sm shadow-sm" onclick="setLulusMassalCAT('LULUS')"><i class="fas fa-check"></i> Lulus Terpilih</button>
+             <button class="btn btn-danger btn-sm shadow-sm" onclick="setLulusMassalCAT('TIDAK LULUS')"><i class="fas fa-times"></i> Tidak Lulus Terpilih</button>
+             <span class="small fw-bold text-muted ms-md-2 text-nowrap">Tampilkan:</span>
+             <select id="limitCAT" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterCAT()">
+                 <option value="10">10</option>
+                 <option value="50">50</option>
+                 <option value="100">100</option>
+                 <option value="ALL" selected>Semua</option>
+             </select>
          </div>
-         <div class="col-md-6">
+         <div class="col-md-5">
              <div class="input-group input-group-sm shadow-sm">
-                 <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                 <input type="text" id="filterCAT" class="form-control border-start-0" placeholder="Cari Nama / NIP Peserta..." onkeyup="applyFilterCAT()">
+                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                 <input type="text" id="filterCAT" class="form-control border-start-0" placeholder="Cari Nama / NIP..." oninput="applyFilterCAT()">
              </div>
          </div>
       </div>
@@ -348,7 +375,7 @@
       </div>
     </div>
 
-    <!-- VIEW BARU: PEGAWAI HASIL CAT (PERSIS SEPERTI GAMBAR DENGAN WARNA) -->
+    <!-- VIEW: PEGAWAI HASIL CAT (PERSIS SEPERTI GAMBAR DENGAN WARNA) -->
     <div id="pegawai-hasil-cat" class="view-section">
       
       <!-- Area Pesan Terkunci (Jika toggle admin ditutup) -->
@@ -361,11 +388,11 @@
       </div>
 
       <!-- Area Tampil Hasil -->
-      <div id="catTerbukaArea" class="hidden pt-2 pb-5">
-         <h5 class="mb-5 fw-bold text-dark text-start" style="text-decoration: underline;">PENGUMUMAN HASIL SELEKSI TES BERBASIS KOMPUTER</h5>
-         <div id="cat-status-banner" class="mb-5 ms-3"></div>
+      <div id="catTerbukaArea" class="hidden pt-2 pb-5 text-center">
+         <h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL SELEKSI TES BERBASIS KOMPUTER</h5>
+         <div id="cat-status-banner" class="mb-5"></div>
          
-         <div class="card border border-dark rounded-0 ms-3" style="max-width: 650px;">
+         <div class="card border border-dark rounded-0 mx-auto" style="max-width: 650px;">
            <div class="card-body p-0">
              <table class="table table-bordered border-dark mb-0 align-middle">
                 <thead class="text-center align-middle" style="background-color: transparent;">
@@ -376,9 +403,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                   <tr><td class="text-center">1</td><td class="ps-3">Kepribadian</td><td class="text-center fw-bold" id="skor1"></td></tr>
-                   <tr><td class="text-center">2</td><td class="ps-3">Profesional</td><td class="text-center fw-bold" id="skor2"></td></tr>
-                   <tr><td class="text-center">3</td><td class="ps-3">Sosial</td><td class="text-center fw-bold" id="skor3"></td></tr>
+                   <tr><td class="text-center">1</td><td class="ps-3 text-start">Kepribadian</td><td class="text-center fw-bold" id="skor1"></td></tr>
+                   <tr><td class="text-center">2</td><td class="ps-3 text-start">Profesional</td><td class="text-center fw-bold" id="skor2"></td></tr>
+                   <tr><td class="text-center">3</td><td class="ps-3 text-start">Sosial</td><td class="text-center fw-bold" id="skor3"></td></tr>
                    <tr><td colspan="2" class="text-center fw-bold">Total</td><td class="text-center fw-bold" id="skorTot"></td></tr>
                 </tbody>
              </table>
@@ -544,6 +571,7 @@
     let globalDaftarPengumuman = [];
     let globalBukaPengumumanCAT = "false";
     let globalAdminData = [];
+    let globalDataUsers = []; // Variabel khusus untuk filter Data Users
     let globalDataCAT = []; // Variabel khusus untuk filter Data CAT Admin
 
     document.addEventListener("DOMContentLoaded", function() { 
@@ -576,7 +604,6 @@
              if(res.Batas_Waktu) { 
                  let d = new Date(res.Batas_Waktu);
                  if(!isNaN(d.getTime())) {
-                     // Convert UTC string to local input time format (YYYY-MM-DDTHH:mm)
                      let localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                      document.getElementById('setBatasWaktu').value = localIso;
                  } else {
@@ -786,7 +813,46 @@
     function simpanJadwal() { let rows = JSON.parse(document.getElementById('jRow').value); let dataJadwal = { Lokasi_Ujian: document.getElementById('jLokasi').value, Tanggal_Ujian: document.getElementById('jTanggal').value, Waktu_Ujian: document.getElementById('jWaktu').value, Sesi_Ujian: document.getElementById('jSesi').value, Username_CAT: document.getElementById('jUsername').value, Password_CAT: document.getElementById('jPassword').value }; btn = document.querySelector("#modalJadwal .btn-primary"); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; google.script.run.withSuccessHandler(res => { btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; bootstrap.Modal.getInstance(document.getElementById('modalJadwal')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminJadwal(); document.getElementById('chkAll').checked = false; }).withFailureHandler(err => { btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; Swal.fire('Gagal Menyimpan', err.message, 'error'); }).saveJadwalMassal(rows, dataJadwal); }
 
     // ================= FUNGSI ADMIN USERS =================
-    function loadUsers() { google.script.run.withSuccessHandler(res => { const tbody = document.getElementById('tbodyUsers'); tbody.innerHTML = ''; res.forEach(u => { let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; tbody.innerHTML += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; }); }).withFailureHandler(err => console.error(err)).getSemuaUsers(); }
+    function loadUsers() {
+       showSpinner(true);
+       google.script.run.withSuccessHandler(res => {
+          showSpinner(false);
+          globalDataUsers = res; // Simpan untuk filtering
+          applyFilterUsers(); // Panggil fungsi filter untuk render tabel pertama kali
+       }).withFailureHandler(err => {
+          showSpinner(false); console.error(err); 
+       }).getSemuaUsers();
+    }
+
+    function renderAdminUsersTable(data) {
+       const tbody = document.getElementById('tbodyUsers'); tbody.innerHTML = ''; 
+       if(data.length === 0) {
+           tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+           return;
+       }
+       data.forEach(u => { 
+           let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
+           tbody.innerHTML += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
+       });
+    }
+
+    // PENCARIAN / FILTER DATA USER
+    function applyFilterUsers() {
+        let keyword = document.getElementById('filterUsers').value.toLowerCase();
+        let limit = document.getElementById('limitUsers').value;
+        
+        let filtered = globalDataUsers.filter(u => {
+            return (u.nama && u.nama.toLowerCase().includes(keyword)) ||
+                   (u.nip && u.nip.toLowerCase().includes(keyword));
+        });
+
+        if (limit !== "ALL") {
+            filtered = filtered.slice(0, parseInt(limit));
+        }
+
+        renderAdminUsersTable(filtered);
+    }
+
     function showModalUser() { document.getElementById('modalUserTitle').innerText = 'Tambah User'; document.getElementById('uRow').value = ''; document.getElementById('uNIP').value = ''; document.getElementById('uNIK').value = ''; document.getElementById('uNama').value = ''; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
     function editUser(row, nip, nik, nama) { document.getElementById('modalUserTitle').innerText = 'Edit User'; document.getElementById('uRow').value = row; document.getElementById('uNIP').value = nip; document.getElementById('uNIK').value = nik; document.getElementById('uNama').value = nama; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
     function simpanUser() { let row = document.getElementById('uRow').value; let nip = document.getElementById('uNIP').value; let nik = document.getElementById('uNIK').value; let nama = document.getElementById('uNama').value; if(!nip || !nik || !nama) return Swal.fire('Peringatan', 'Lengkapi seluruh data!', 'warning'); bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); showSpinner(true); if(row) { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).editUserDB(row, nip, nik, nama); } else { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).addUserDB(nip, nik, nama); } }
@@ -803,7 +869,7 @@
       google.script.run.withSuccessHandler(res => {
           showSpinner(false); 
           globalDataCAT = res.filter(u => u.role !== 'Admin'); // Simpan untuk pencarian
-          renderAdminCATTable(globalDataCAT);
+          applyFilterCAT(); // Panggil render tabel dengan filter default
       }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaUsers();
     }
 
@@ -826,13 +892,20 @@
         });
     }
 
-    // PENCARIAN / FILTER NAMA & NIP DI ADMIN CAT
+    // PENCARIAN / FILTER DATA HASIL CAT ADMIN
     function applyFilterCAT() {
         let keyword = document.getElementById('filterCAT').value.toLowerCase();
+        let limit = document.getElementById('limitCAT').value;
+
         let filtered = globalDataCAT.filter(u => {
             return (u.nama && u.nama.toLowerCase().includes(keyword)) ||
                    (u.nip && u.nip.toLowerCase().includes(keyword));
         });
+
+        if (limit !== "ALL") {
+            filtered = filtered.slice(0, parseInt(limit));
+        }
+
         renderAdminCATTable(filtered);
     }
 
@@ -1027,11 +1100,11 @@
           const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.innerHTML = `<div class="text-success mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify; font-weight: 800;">1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</div>`;
+              msgArea.innerHTML = `<div class="text-success mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem; font-weight: 800;">SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
-              msgArea.innerHTML = `<div class="text-danger mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify; font-weight: 800;">2. MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
+              msgArea.innerHTML = `<div class="text-danger mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem; font-weight: 800;">MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
           } else {
-              msgArea.innerHTML = `<div class="text-secondary fw-bold mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</div>`;
+              msgArea.innerHTML = `<div class="text-secondary fw-bold mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem;">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</div>`;
           }
 
           document.getElementById('skor1').innerText = (res && res.skor_kepribadian) ? res.skor_kepribadian : '';
