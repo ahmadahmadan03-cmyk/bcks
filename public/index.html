@@ -86,7 +86,7 @@
           <div class="card shadow-lg border-0 rounded-lg mt-5">
             <div class="card-header text-center py-4"><h4 class="font-weight-light my-0">Login Sistem</h4></div>
             <div class="card-body p-4">
-              <form id="loginForm" onsubmit="event.preventDefault(); prosesLogin();">
+             <form id="loginForm" onsubmit="event.preventDefault(); prosesLogin();">
                 <div class="form-floating mb-3"><input class="form-control" id="inputUsername" type="text" placeholder="NIP/Username" required /><label>NIP / Username Admin</label></div>
                 <div class="form-floating mb-3 position-relative">
                   <input class="form-control pe-5" id="inputPassword" type="password" placeholder="Password" required />
@@ -274,14 +274,14 @@
             <h5 class="mt-4 mb-3 border-bottom pb-2">Upload Berkas Pendukung (Format PDF/JPG max 2MB)</h5>
             <div class="row" id="fileInputs">
               <div class="col-md-12 mb-3"><label class="fw-bold text-primary">Pas Photo 3x4 (Khusus untuk Kartu Ujian)</label><input type="file" class="form-control bioFile border-primary" data-name="Foto" accept=".jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Pendidikan D-IV/S1/Terakhir</label><input type="file" class="form-control bioFile" data-name="Pendidikan D-IV/S1/Terakhir" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Sertifikat Pendidik</label><input type="file" class="form-control bioFile" data-name="Sertifikat Pendidik" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan Minimal III/c</label><input type="file" class="form-control bioFile" data-name="SK Pangkat/Golongan" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Ijazah D-IV/S1</label><input type="file" class="form-control bioFile" data-name="Ijazah" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Sertifikat Pendidik</label><input type="file" class="form-control bioFile" data-name="Sertifikat" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SK Pangkat/Golongan</label><input type="file" class="form-control bioFile" data-name="SK" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-6 mb-3"><label>SKP 2 Tahun Terakhir</label><input type="file" class="form-control bioFile" data-name="SKP" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat, Rohani, Jasmani & Bebas NAPZA</label><input type="file" class="form-control bioFile" data-name="Surat Ket. Sehat, Rohani, Jasmani & Bebas NAPZA" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Surat Keterangan Catatan Kepolisian (SKCK)</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-6 mb-3"><label>Pakta Integritas & Surat Rekomendasi Mengikuti Seleksi dari Atasan & Surat Ket. Tidak Pernah dikenai Hukuman Disiplin</label><input type="file" class="form-control bioFile" data-name="Pakta Integritas & SK Rekom & SK TPDH" accept=".pdf, .jpg, .jpeg, .png"></div>
-              <div class="col-md-12 mb-3"><label class="fw-bold">Surat Ket. Memiliki Pengalaman Manajerial Paling Singkat 2 (Dua) Tahun</label><input type="file" class="form-control bioFile" data-name="SK Manajerial" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Surat Ket. Sehat & NAPZA</label><input type="file" class="form-control bioFile" data-name="Sehat" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>SKCK</label><input type="file" class="form-control bioFile" data-name="SKCK" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-6 mb-3"><label>Pakta Integritas</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
+              <div class="col-md-12 mb-3"><label class="fw-bold">Surat Ket. Memiliki Pengalaman Manajerial Paling Singkat 2 (Dua) Tahun</label><input type="file" class="form-control bioFile" data-name="Manajerial" accept=".pdf, .jpg, .jpeg, .png"></div>
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg" id="btnSubmitBio"><i class="fas fa-paper-plane"></i> Simpan dan Kirim</button>
           </form>
@@ -480,7 +480,7 @@
     </div>
   </div>
 
-  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>PTKBS DISDIK 2026</b></div>
+  <div class="footer">&copy; 2026 Sistem Seleksi BCKS Kabupaten Tangerang | <b>belajar inovasi</b></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -554,6 +554,57 @@
             }
         });
     });
+
+    // =================================================================================
+    // PERBAIKAN ZONA WAKTU: Menangani +07:00 (WIB) Saat Menyimpan dan Memuat Batas Waktu
+    // =================================================================================
+    function loadAdminPengaturan() {
+       showSpinner(true);
+       google.script.run
+         .withSuccessHandler(res => { 
+             showSpinner(false); 
+             if(res.Batas_Waktu) { 
+                 let d = new Date(res.Batas_Waktu);
+                 if(!isNaN(d.getTime())) {
+                     // Convert UTC string to local input time format (YYYY-MM-DDTHH:mm)
+                     let localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                     document.getElementById('setBatasWaktu').value = localIso;
+                 } else {
+                     document.getElementById('setBatasWaktu').value = res.Batas_Waktu.substring(0, 16); 
+                 }
+             } else { 
+                 document.getElementById('setBatasWaktu').value = ""; 
+             } 
+             
+             globalDaftarPengumuman = res.PengumumanList || []; 
+             let tbody = document.getElementById('tbodyPengumumanAdmin'); tbody.innerHTML = ''; 
+             if(globalDaftarPengumuman.length > 0){ 
+                 globalDaftarPengumuman.forEach((p, idx) => { 
+                     let btnFile = p.file ? `<a href="${p.file}" target="_blank" class="btn btn-sm btn-outline-success"><i class="fas fa-file"></i> File</a>` : '-'; 
+                     let escJudul = p.judul.replace(/'/g, "\\'"); 
+                     let escTeks = p.teks.replace(/'/g, "\\'").replace(/\n/g, "\\n"); 
+                     let escFile = p.file ? p.file.replace(/'/g, "\\'") : ""; 
+                     tbody.innerHTML += `<tr><td><small>${p.tanggal}</small></td><td><b>${p.judul}</b></td><td><small>${p.teks.substring(0, 60)}...</small></td><td class="text-center">${btnFile}</td><td class="text-center"><button class="btn btn-sm btn-warning mb-1" onclick="editPengumuman('${p.row}', '${escJudul}', '${escTeks}', '${escFile}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger mb-1" onclick="hapusPengumuman('${p.row}')"><i class="fas fa-trash"></i></button></td></tr>`; 
+                 }); 
+             } else { 
+                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada pengumuman yang ditambahkan.</td></tr>`; 
+             } 
+         })
+         .withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); })
+         .getPengaturanGlobal();
+    }
+
+    function simpanPengaturanBatas() { 
+        let tgl = document.getElementById('setBatasWaktu').value; 
+        if(tgl && tgl.length === 16) { 
+             tgl = tgl + "+07:00"; // Menambahkan zona waktu WIB agar Vercel membaca dengan benar
+        }
+        showSpinner(true); 
+        google.script.run
+          .withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadPengaturanGlobal(); })
+          .withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); })
+          .saveBatasWaktu(tgl); 
+    }
 
     function loadPengaturanGlobal() {
        google.script.run
@@ -676,12 +727,7 @@
     
     function showSpinner(show) { document.getElementById('globalSpinner').style.display = show ? 'block' : 'none'; }
 
-    // ================= FUNGSI ADMIN PENGATURAN =================
-    function loadAdminPengaturan() {
-       showSpinner(true);
-       google.script.run.withSuccessHandler(res => { showSpinner(false); if(res.Batas_Waktu) { document.getElementById('setBatasWaktu').value = res.Batas_Waktu.substring(0, 16); } else { document.getElementById('setBatasWaktu').value = ""; } globalDaftarPengumuman = res.PengumumanList || []; let tbody = document.getElementById('tbodyPengumumanAdmin'); tbody.innerHTML = ''; if(globalDaftarPengumuman.length > 0){ globalDaftarPengumuman.forEach((p, idx) => { let btnFile = p.file ? `<a href="${p.file}" target="_blank" class="btn btn-sm btn-outline-success"><i class="fas fa-file"></i> File</a>` : '-'; let escJudul = p.judul.replace(/'/g, "\\'"); let escTeks = p.teks.replace(/'/g, "\\'").replace(/\n/g, "\\n"); let escFile = p.file ? p.file.replace(/'/g, "\\'") : ""; tbody.innerHTML += `<tr><td><small>${p.tanggal}</small></td><td><b>${p.judul}</b></td><td><small>${p.teks.substring(0, 60)}...</small></td><td class="text-center">${btnFile}</td><td class="text-center"><button class="btn btn-sm btn-warning mb-1" onclick="editPengumuman('${p.row}', '${escJudul}', '${escTeks}', '${escFile}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger mb-1" onclick="hapusPengumuman('${p.row}')"><i class="fas fa-trash"></i></button></td></tr>`; }); } else { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada pengumuman yang ditambahkan.</td></tr>`; } }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getPengaturanGlobal();
-    }
-    function simpanPengaturanBatas() { let tgl = document.getElementById('setBatasWaktu').value; showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadPengaturanGlobal(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).saveBatasWaktu(tgl); }
+    // ================= FUNGSI LAINNYA =================
     function showModalPengumuman() { document.getElementById('modalPengumumanTitle').innerText = 'Tambah Pengumuman Baru'; document.getElementById('pRow').value = ''; document.getElementById('pJudul').value = ''; document.getElementById('pTeks').value = ''; document.getElementById('pFile').value = ''; document.getElementById('pOldFile').value = ''; document.getElementById('pLinkFile').classList.add('d-none'); new bootstrap.Modal(document.getElementById('modalPengumuman')).show(); }
     function editPengumuman(row, judul, teks, oldFile) { document.getElementById('modalPengumumanTitle').innerText = 'Edit Pengumuman'; document.getElementById('pRow').value = row; document.getElementById('pJudul').value = judul; document.getElementById('pTeks').value = teks; document.getElementById('pFile').value = ''; document.getElementById('pOldFile').value = oldFile; let lFile = document.getElementById('pLinkFile'); if(oldFile && oldFile !== "") { lFile.classList.remove('d-none'); lFile.querySelector('a').href = oldFile; } else { lFile.classList.add('d-none'); } new bootstrap.Modal(document.getElementById('modalPengumuman')).show(); }
     async function simpanPengumumanDb() { let row = document.getElementById('pRow').value; let judul = document.getElementById('pJudul').value; let teks = document.getElementById('pTeks').value; let oldFile = document.getElementById('pOldFile').value; let fileInput = document.getElementById('pFile'); if(!judul || !teks) return Swal.fire('Peringatan', 'Judul dan Teks pengumuman wajib diisi!', 'warning'); let fileObj = null; if(fileInput.files.length > 0) { let f = fileInput.files[0]; if (f.size > 5242880) return Swal.fire('Gagal', 'Ukuran file surat pengumuman melebihi 5MB!', 'error'); let b64 = await toBase64(f); fileObj = { name: f.name, base64: b64 }; } let btn = document.getElementById('btnSimpanPeng'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; google.script.run.withSuccessHandler(res => { btn.innerHTML = '<i class="fas fa-save"></i> Simpan Pengumuman'; btn.disabled = false; bootstrap.Modal.getInstance(document.getElementById('modalPengumuman')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminPengaturan(); loadPengaturanGlobal(); }).withFailureHandler(err => { btn.innerHTML = '<i class="fas fa-save"></i> Simpan Pengumuman'; btn.disabled = false; Swal.fire('Gagal!', err.message, 'error'); }).savePengumuman(null, judul, teks, fileObj, oldFile, row); }
@@ -951,7 +997,6 @@
           const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              // PERBAIKAN: Membuat Keterangan Nomor 1 Menjadi BOLD
               msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;"><b>1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</b></div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
               msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">2. MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
