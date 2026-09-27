@@ -26,11 +26,8 @@
     
     #areaCetak { background: #e0e0e0; padding: 20px; border-radius: 8px; display: flex; justify-content: center;}
     #kartuPeserta { width: 100%; max-width: 190mm; padding: 30px 40px; background: #fff; color: #000; font-family: "Times New Roman", Times, serif; position: relative; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); margin: 0 auto; }
-    
-    /* PERBAIKAN: Mengurangi padding dan font size agar tetap 1 halaman setelah ditambah baris Ruangan */
     .k-table { width: 100%; border-collapse: collapse; margin-top: 0;}
     .k-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: middle; font-size: 10.5pt; text-align: left;}
-    
     .k-header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 12px; display: flex; align-items: center;}
     .k-header img { width: 85px; height: auto; margin-right: 20px; }
     .k-header div { flex: 1; text-align: center; line-height: 1.3;}
@@ -320,7 +317,17 @@
               <div class="col-md-6 mb-3"><label>Pakta Integritas</label><input type="file" class="form-control bioFile" data-name="Pakta" accept=".pdf, .jpg, .jpeg, .png"></div>
               <div class="col-md-12 mb-3"><label class="fw-bold">Surat Ket. Memiliki Pengalaman Manajerial Paling Singkat 2 (Dua) Tahun</label><input type="file" class="form-control bioFile" data-name="Manajerial" accept=".pdf, .jpg, .jpeg, .png"></div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg" id="btnSubmitBio"><i class="fas fa-paper-plane"></i> Simpan dan Kirim</button>
+            
+            <!-- PERBAIKAN: Alert Peringatan Sebelum Simpan -->
+            <div class="alert alert-warning mt-4 mb-3 border-warning shadow-sm" style="border-left: 5px solid #ffc107;" id="warningSubmit">
+               <h5 class="fw-bold text-dark mb-3"><i class="fas fa-exclamation-triangle text-danger me-2"></i> PERHATIAN</h5>
+               <p class="mb-2 text-dark" style="text-align: justify;">Sebelum melakukan Simpan dan Kirim Data, mohon Bapak/Ibu memastikan dan mengecek kembali data yang telah diinput satu per satu agar tidak terjadi kesalahan dalam penginputan maupun pengiriman data.</p>
+               <p class="mb-2 text-danger fw-bold" style="text-align: justify;">PENTING: Setelah Bapak/Ibu melakukan Simpan dan Kirim Data, data akan dikunci dan tidak dapat diubah atau diperbaiki kembali.</p>
+               <p class="mb-2 text-dark" style="text-align: justify;">Mohon pastikan seluruh data sudah benar, lengkap, dan sesuai sebelum menekan tombol Simpan dan Kirim Data.</p>
+               <p class="mb-0 text-center fw-bold text-dark mt-3">🙏 Terima kasih atas perhatian dan ketelitiannya. 🙏</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-2 btn-lg" id="btnSubmitBio"><i class="fas fa-paper-plane"></i> Simpan dan Kirim</button>
           </form>
         </div>
       </div>
@@ -357,7 +364,6 @@
                           <tr><td style="font-weight: bold;">Tanggal Ujian</td><td colspan="2">: <span id="k_tgl"></span></td></tr>
                           <tr><td style="font-weight: bold;">Waktu Ujian</td><td colspan="2">: <span id="k_waktu"></span></td></tr>
                           <tr><td style="font-weight: bold;">Sesi Ujian</td><td colspan="2">: <span id="k_sesi"></span></td></tr>
-                          <!-- PERBAIKAN KARTU PESERTA: Penambahan Baris Ruangan -->
                           <tr><td style="font-weight: bold;">Ruangan</td><td colspan="2">: <span id="k_ruangan"></span></td></tr>
                           <tr><td rowspan="2" style="font-weight: bold; vertical-align: middle;">Akun</td><td style="width: 25%; font-weight: bold; text-align: center;">Username</td><td>: <span id="k_user"></span></td></tr>
                           <tr><td style="font-weight: bold; text-align: center;">Password</td><td>: <span id="k_pass"></span></td></tr>
@@ -447,7 +453,6 @@
           <div class="alert alert-info py-2" id="jNama" style="font-weight:bold; font-size:0.9rem;"></div>
           <div class="mb-3"><label class="form-label text-muted small mb-0">Lokasi Ujian</label><textarea id="jLokasi" class="form-control" rows="2">Diklat Kitri Bhakti Curug, Kabupaten Tangerang</textarea></div>
           <div class="row">
-            <!-- PERBAIKAN: Layout Input Tambahan Ruangan -->
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Tanggal Ujian</label><input type="date" id="jTanggal" class="form-control"></div>
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Waktu Ujian</label><input type="time" id="jWaktu" class="form-control"></div>
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Sesi Ujian</label><input type="text" id="jSesi" class="form-control" placeholder="Contoh: Sesi 1"></div>
@@ -597,7 +602,7 @@
         });
     });
 
-    function loadPengaturanGlobal() {
+    function loadAdminPengaturan() {
        showSpinner(true);
        google.script.run
          .withSuccessHandler(res => { 
@@ -793,7 +798,6 @@
                     "Tanggal Ujian": d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-',
                     "Waktu Ujian": d.Waktu_Ujian || '-',
                     "Sesi Ujian": d.Sesi_Ujian || '-',
-                    "Ruangan": d.Ruangan_Ujian || '-',
                     "Username CAT": d.Username_CAT || '-',
                     "Password CAT": d.Password_CAT || '-'
                 });
@@ -1048,6 +1052,10 @@
                 formElements.forEach(el => el.disabled = true);
                 btnSubmit.disabled = true;
                 
+                // Menyembunyikan Alert Peringatan
+                const warningBox = document.getElementById('warningSubmit');
+                if(warningBox) warningBox.classList.add('d-none');
+                
                 if(res.Status_Verifikasi === 'Berkas Lengkap') { 
                     btnSubmit.innerText = "Berkas Disetujui"; 
                     alertBox.className = "alert alert-success"; 
@@ -1064,12 +1072,21 @@
                     alertBox.innerHTML = "<b>Info:</b> Data Anda sudah terkirim dan menunggu antrean verifikasi. Anda tidak dapat mengubah data kembali."; 
                 }
                 alertBox.classList.remove('d-none');
+            } else {
+                const warningBox = document.getElementById('warningSubmit');
+                if(warningBox) warningBox.classList.remove('d-none');
             }
           } else { 
             if (isExpired) { 
                 formElements.forEach(el => el.disabled = true); btnSubmit.disabled = true; btnSubmit.innerText = "Waktu Habis"; 
+                const warningBox = document.getElementById('warningSubmit');
+                if(warningBox) warningBox.classList.add('d-none');
+                
                 alertBox.className = "alert alert-danger pulse-red"; alertBox.innerHTML = "Maaf batas melengkapi data sudah selesai."; alertBox.classList.remove('d-none'); 
-            } 
+            } else {
+                const warningBox = document.getElementById('warningSubmit');
+                if(warningBox) warningBox.classList.remove('d-none');
+            }
           }
         })
         .withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); })
@@ -1168,11 +1185,26 @@
           const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.innerHTML = `<div class="text-success mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem; font-weight: 800;">SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</div>`;
+              msgArea.innerHTML = `
+              <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
+                  <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                  <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS</h4>
+                  <div class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+                  <div class="text-muted">Selanjutnya silahkan buka ruang GTK masing - masing untuk upload dokumen</div>
+              </div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
-              msgArea.innerHTML = `<div class="text-danger mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem; font-weight: 800;">MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
+              msgArea.innerHTML = `
+              <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
+                  <i class="fas fa-times-circle fa-4x text-danger mb-3"></i>
+                  <h4 class="fw-bold text-danger mb-2">MOHON MAAF, ANDA DINYATAKAN TIDAK LOLOS</h4>
+                  <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+              </div>`;
           } else {
-              msgArea.innerHTML = `<div class="text-secondary fw-bold mb-4 text-center" style="line-height: 1.8; font-size: 1.1rem;">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</div>`;
+              msgArea.innerHTML = `
+              <div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center">
+                  <i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i>
+                  <h5 class="fw-bold text-secondary mb-0">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</h5>
+              </div>`;
           }
 
           document.getElementById('skor1').innerText = (res && res.skor_kepribadian) ? res.skor_kepribadian : '';
