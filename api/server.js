@@ -30,19 +30,20 @@ export default async function handler(req, res) {
     const { action, args } = req.body;
     let result;
 
-    // AUTO-PATCH: Menambahkan kolom CAT otomatis tanpa perlu eksekusi SQL manual
+    // AUTO-PATCH
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_kepribadian TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_profesional TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_sosial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_total TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN status_lulus_cat TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
+    // PERBAIKAN: Penambahan Kolom Ruangan Ujian
+    try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
 
     switch (action) {
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
         
-        // JALUR MASUK DARURAT (BACKDOOR ADMIN) - Memastikan Anda bisa masuk meski DB kosong
         if (nip.toLowerCase() === 'admin' && pass.toLowerCase() === 'admin') {
             result = { status: "success", role: "Admin", nip: "admin", nama: "Administrator Sistem" };
             return res.status(200).json({ result });
@@ -133,7 +134,6 @@ export default async function handler(req, res) {
         result = countUser + " User berhasil diimpor ke database.";
         break;
 
-      // UPLOAD EXCEL NILAI CAT
       case 'uploadExcelNilaiCAT':
         let excelNilai = args[0]; let countNilai = 0;
         for (let row of excelNilai) {
@@ -154,7 +154,6 @@ export default async function handler(req, res) {
         result = countNilai + " Data nilai peserta berhasil diimpor.";
         break;
 
-      // SET LULUS CAT MASSAL
       case 'setLulusCATMassal':
         let nipsLulus = args[0]; let statusLulus = args[1];
         for (let n of nipsLulus) {
@@ -174,12 +173,11 @@ export default async function handler(req, res) {
            Jabatan: r.jabatan, Unit_Kerja: r.unit_kerja, Email: r.email, No_HP: r.no_hp, Alamat: r.alamat,
            Status_Verifikasi: r.status_verifikasi, Catatan: r.catatan, Foto: r.foto, Ijazah: r.ijazah, Sertifikat: r.sertifikat,
            SK: r.sk, SKP: r.skp, Sehat: r.sehat, SKCK: r.skck, Pakta: r.pakta, Manajerial: r.manajerial, Lokasi_Ujian: r.lokasi_ujian,
-           Tanggal_Ujian: r.tanggal_ujian, Waktu_Ujian: r.waktu_ujian, Sesi_Ujian: r.sesi_ujian, Username_CAT: r.username_cat, Password_CAT: r.password_cat
+           Tanggal_Ujian: r.tanggal_ujian, Waktu_Ujian: r.waktu_ujian, Sesi_Ujian: r.sesi_ujian, Ruangan_Ujian: r.ruangan_ujian, Username_CAT: r.username_cat, Password_CAT: r.password_cat
         }));
         result = isSingle ? (parsedData[0] || null) : parsedData;
         break;
 
-      // AMBIL NILAI CAT UNTUK TAMPILAN PESERTA
       case 'getHasilCATPegawai':
         const rCAT = await db.execute({ sql: "SELECT * FROM users WHERE nip=?", args: [args[0]] });
         if(rCAT.rows.length > 0) result = rCAT.rows[0];
@@ -201,7 +199,11 @@ export default async function handler(req, res) {
         for(let n of nips) {
            let ucat = jd.Username_CAT || `CAT${n.toString().substring(0,6)}`;
            let pcat = jd.Password_CAT || Math.floor(100000 + Math.random() * 900000);
-           await db.execute({ sql: "UPDATE biodata SET lokasi_ujian=?, tanggal_ujian=?, waktu_ujian=?, sesi_ujian=?, username_cat=?, password_cat=? WHERE nip=?", args: [jd.Lokasi_Ujian, jd.Tanggal_Ujian, jd.Waktu_Ujian, jd.Sesi_Ujian, ucat, pcat, n] });
+           // PERBAIKAN: Menambahkan field Ruangan_Ujian ke Database
+           await db.execute({ 
+               sql: "UPDATE biodata SET lokasi_ujian=?, tanggal_ujian=?, waktu_ujian=?, sesi_ujian=?, ruangan_ujian=?, username_cat=?, password_cat=? WHERE nip=?", 
+               args: [jd.Lokasi_Ujian, jd.Tanggal_Ujian, jd.Waktu_Ujian, jd.Sesi_Ujian, jd.Ruangan_Ujian, ucat, pcat, n] 
+           });
         }
         result = `Jadwal & Akun CAT berhasil disimpan untuk ${nips.length} peserta!`;
         break;
