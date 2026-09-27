@@ -997,9 +997,9 @@
           const msgArea = document.getElementById('cat-status-banner');
           
           if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;"><b>1. SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</b></div>`;
+              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;"><b>SELAMAT ANDA DINYATAKAN LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG SELANJUTNYA SILAHKAN BUKA RUANG GTK MASING - MASING UNTUK UPLOAD DOKUMEN</b></div>`;
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
-              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">2. MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
+              msgArea.innerHTML = `<div class="text-dark mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">MOHON MAAF ANDA DINYATAKAN TIDAK LOLOS SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>`;
           } else {
               msgArea.innerHTML = `<div class="text-secondary fw-bold mb-4" style="line-height: 1.8; font-size: 1.1rem; text-align: justify;">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</div>`;
           }
