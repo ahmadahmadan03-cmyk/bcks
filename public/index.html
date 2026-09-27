@@ -26,10 +26,13 @@
     
     #areaCetak { background: #e0e0e0; padding: 20px; border-radius: 8px; display: flex; justify-content: center;}
     #kartuPeserta { width: 100%; max-width: 190mm; padding: 30px 40px; background: #fff; color: #000; font-family: "Times New Roman", Times, serif; position: relative; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); margin: 0 auto; }
+    
+    /* PERBAIKAN: Mengurangi padding dan font size agar tetap 1 halaman setelah ditambah baris Ruangan */
     .k-table { width: 100%; border-collapse: collapse; margin-top: 0;}
-    .k-table td { border: 1px solid #000; padding: 8px 12px; vertical-align: middle; font-size: 11pt; text-align: left;}
-    .k-header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #000; padding-bottom: 15px; display: flex; align-items: center;}
-    .k-header img { width: 90px; height: auto; margin-right: 20px; }
+    .k-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: middle; font-size: 10.5pt; text-align: left;}
+    
+    .k-header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 12px; display: flex; align-items: center;}
+    .k-header img { width: 85px; height: auto; margin-right: 20px; }
     .k-header div { flex: 1; text-align: center; line-height: 1.3;}
     .k-photo-box { width: 3cm; height: 4cm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: #f8f9fa;}
     .k-photo-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -159,7 +162,6 @@
         </div>
       </div>
       
-      <!-- PERBAIKAN: Filter Tabel Kelola User -->
       <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
          <div class="col-md-6 d-flex align-items-center gap-2 mb-2 mb-md-0">
              <span class="small fw-bold text-muted text-nowrap">Tampilkan:</span>
@@ -201,7 +203,6 @@
         </div>
       </div>
       
-      <!-- PERBAIKAN: Layout Filter Pencarian & Jumlah Baris Hasil CAT -->
       <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
          <div class="col-md-7 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
              <button class="btn btn-primary btn-sm shadow-sm" onclick="setLulusMassalCAT('LULUS')"><i class="fas fa-check"></i> Lulus Terpilih</button>
@@ -356,14 +357,16 @@
                           <tr><td style="font-weight: bold;">Tanggal Ujian</td><td colspan="2">: <span id="k_tgl"></span></td></tr>
                           <tr><td style="font-weight: bold;">Waktu Ujian</td><td colspan="2">: <span id="k_waktu"></span></td></tr>
                           <tr><td style="font-weight: bold;">Sesi Ujian</td><td colspan="2">: <span id="k_sesi"></span></td></tr>
+                          <!-- PERBAIKAN KARTU PESERTA: Penambahan Baris Ruangan -->
+                          <tr><td style="font-weight: bold;">Ruangan</td><td colspan="2">: <span id="k_ruangan"></span></td></tr>
                           <tr><td rowspan="2" style="font-weight: bold; vertical-align: middle;">Akun</td><td style="width: 25%; font-weight: bold; text-align: center;">Username</td><td>: <span id="k_user"></span></td></tr>
                           <tr><td style="font-weight: bold; text-align: center;">Password</td><td>: <span id="k_pass"></span></td></tr>
                       </table>
                   </div>
               </div>
-              <div style="margin-top: 30px; text-align: left;">
-                  <b style="font-size: 12pt;">Perhatian:</b>
-                  <ol style="margin-top: 10px; font-size: 11pt; line-height: 1.5; padding-left: 25px;">
+              <div style="margin-top: 20px; text-align: left;">
+                  <b style="font-size: 11.5pt;">Perhatian:</b>
+                  <ol style="margin-top: 5px; font-size: 10.5pt; line-height: 1.4; padding-left: 25px;">
                       <li>Peserta WAJIB Datang 90 Menit Sebelum Waktu Ujian</li>
                       <li>Kartu Peserta Ujian Ini Wajib Dibawa Saat Pelaksanaan Ujian</li>
                       <li>Peserta wajib membawa Kartu / Bukti Identitas Diri (Asli) yang sesuai dengan Kartu Peserta Ujian</li>
@@ -375,10 +378,9 @@
       </div>
     </div>
 
-    <!-- VIEW: PEGAWAI HASIL CAT (PERSIS SEPERTI GAMBAR DENGAN WARNA) -->
+    <!-- VIEW BARU: PEGAWAI HASIL CAT -->
     <div id="pegawai-hasil-cat" class="view-section">
-      
-      <!-- Area Pesan Terkunci (Jika toggle admin ditutup) -->
+      <!-- Area Pesan Terkunci -->
       <div id="catTerkunciArea" class="hidden mt-5">
          <div class="alert alert-warning text-center p-5 rounded-4 shadow-sm border-0">
              <i class="fas fa-lock fa-3x mb-3 text-warning"></i>
@@ -445,9 +447,11 @@
           <div class="alert alert-info py-2" id="jNama" style="font-weight:bold; font-size:0.9rem;"></div>
           <div class="mb-3"><label class="form-label text-muted small mb-0">Lokasi Ujian</label><textarea id="jLokasi" class="form-control" rows="2">Diklat Kitri Bhakti Curug, Kabupaten Tangerang</textarea></div>
           <div class="row">
+            <!-- PERBAIKAN: Layout Input Tambahan Ruangan -->
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Tanggal Ujian</label><input type="date" id="jTanggal" class="form-control"></div>
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Waktu Ujian</label><input type="time" id="jWaktu" class="form-control"></div>
-            <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Sesi Ujian</label><input type="text" id="jSesi" class="form-control" placeholder="Contoh: Sesi 1"></div>
+            <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Sesi Ujian</label><input type="text" id="jSesi" class="form-control" placeholder="Contoh: Sesi 1"></div>
+            <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Ruangan</label><input type="text" id="jRuangan" class="form-control" placeholder="Contoh: Lab Komputer 1"></div>
             <hr>
             <p class="text-danger small mb-2">*Kosongi jika ingin sistem membuat Username & Password otomatis secara massal.</p>
             <div class="col-6 mb-3"><label class="form-label text-muted small mb-0">Username CAT</label><input type="text" id="jUsername" class="form-control" placeholder="Generate ID..."></div>
@@ -502,7 +506,7 @@
     </div>
   </div>
 
-  <!-- Modal Upload Excel CAT (BARU) -->
+  <!-- Modal Upload Excel CAT -->
   <div class="modal fade" id="modalUploadCAT" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content border-0 shadow">
@@ -571,8 +575,8 @@
     let globalDaftarPengumuman = [];
     let globalBukaPengumumanCAT = "false";
     let globalAdminData = [];
-    let globalDataUsers = []; // Variabel khusus untuk filter Data Users
-    let globalDataCAT = []; // Variabel khusus untuk filter Data CAT Admin
+    let globalDataUsers = []; 
+    let globalDataCAT = []; 
 
     document.addEventListener("DOMContentLoaded", function() { 
         checkSession(); 
@@ -593,10 +597,7 @@
         });
     });
 
-    // =================================================================================
-    // PERBAIKAN ZONA WAKTU: Menangani +07:00 (WIB) Saat Menyimpan dan Memuat Batas Waktu
-    // =================================================================================
-    function loadAdminPengaturan() {
+    function loadPengaturanGlobal() {
        showSpinner(true);
        google.script.run
          .withSuccessHandler(res => { 
@@ -634,7 +635,7 @@
     function simpanPengaturanBatas() { 
         let tgl = document.getElementById('setBatasWaktu').value; 
         if(tgl && tgl.length === 16) { 
-             tgl = tgl + "+07:00"; // Menambahkan zona waktu WIB agar Vercel membaca dengan benar
+             tgl = tgl + "+07:00"; 
         }
         showSpinner(true); 
         google.script.run
@@ -792,6 +793,7 @@
                     "Tanggal Ujian": d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-',
                     "Waktu Ujian": d.Waktu_Ujian || '-',
                     "Sesi Ujian": d.Sesi_Ujian || '-',
+                    "Ruangan": d.Ruangan_Ujian || '-',
                     "Username CAT": d.Username_CAT || '-',
                     "Password CAT": d.Password_CAT || '-'
                 });
@@ -807,18 +809,84 @@
     }
 
     function toggleAllJadwal(source) { const checkboxes = document.querySelectorAll('.chk-jadwal'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
-    function loadAdminJadwal() { showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); globalAdminData = res; const tbody = document.getElementById('tbodyAdminJadwal'); tbody.innerHTML = ''; res.forEach((d, index) => { if (d.Status_Verifikasi === 'Berkas Lengkap') { let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; let wktFormat = formatWaktu24(d.Waktu_Ujian); let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; tbody.innerHTML += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'}</small><br></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; } }); if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata(); }
-    function bukaJadwal(index) { let d = globalAdminData[index]; document.getElementById('jRow').value = JSON.stringify([d.row]); document.getElementById('jNama').innerText = "Peserta: " + d.Nama; document.getElementById('jLokasi').value = d.Lokasi_Ujian || "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; let tgl = new Date(d.Tanggal_Ujian); document.getElementById('jTanggal').value = !isNaN(tgl.getTime()) ? tgl.toISOString().split('T')[0] : ""; let wktFormat = formatWaktu24(d.Waktu_Ujian); document.getElementById('jWaktu').value = wktFormat !== '-' ? wktFormat : ""; document.getElementById('jSesi').value = d.Sesi_Ujian || ""; document.getElementById('jUsername').value = d.Username_CAT || ""; document.getElementById('jPassword').value = d.Password_CAT || ""; new bootstrap.Modal(document.getElementById('modalJadwal')).show(); }
-    function bukaJadwalMassal() { let checked = document.querySelectorAll('.chk-jadwal:checked'); if(checked.length === 0) return Swal.fire('Peringatan', 'Centang minimal satu peserta pada tabel!', 'warning'); let rowsArray = []; checked.forEach(chk => rowsArray.push(parseInt(chk.value))); document.getElementById('jRow').value = JSON.stringify(rowsArray); document.getElementById('jNama').innerText = checked.length + " Peserta Terpilih"; document.getElementById('jLokasi').value = "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; document.getElementById('jTanggal').value = ""; document.getElementById('jWaktu').value = ""; document.getElementById('jSesi').value = ""; document.getElementById('jUsername').value = ""; document.getElementById('jPassword').value = ""; new bootstrap.Modal(document.getElementById('modalJadwal')).show(); }
-    function simpanJadwal() { let rows = JSON.parse(document.getElementById('jRow').value); let dataJadwal = { Lokasi_Ujian: document.getElementById('jLokasi').value, Tanggal_Ujian: document.getElementById('jTanggal').value, Waktu_Ujian: document.getElementById('jWaktu').value, Sesi_Ujian: document.getElementById('jSesi').value, Username_CAT: document.getElementById('jUsername').value, Password_CAT: document.getElementById('jPassword').value }; btn = document.querySelector("#modalJadwal .btn-primary"); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; google.script.run.withSuccessHandler(res => { btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; bootstrap.Modal.getInstance(document.getElementById('modalJadwal')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminJadwal(); document.getElementById('chkAll').checked = false; }).withFailureHandler(err => { btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; Swal.fire('Gagal Menyimpan', err.message, 'error'); }).saveJadwalMassal(rows, dataJadwal); }
+    
+    function loadAdminJadwal() { 
+        showSpinner(true); 
+        google.script.run.withSuccessHandler(res => { 
+            showSpinner(false); globalAdminData = res; 
+            const tbody = document.getElementById('tbodyAdminJadwal'); tbody.innerHTML = ''; 
+            res.forEach((d, index) => { 
+                if (d.Status_Verifikasi === 'Berkas Lengkap') { 
+                    let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; 
+                    let wktFormat = formatWaktu24(d.Waktu_Ujian); 
+                    let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; 
+                    let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); 
+                    let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; 
+                    let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; 
+                    tbody.innerHTML += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'} | <b>Ruangan:</b> ${d.Ruangan_Ujian || '-'}</small></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; 
+                } 
+            }); 
+            if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; 
+        }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata(); 
+    }
+    
+    function bukaJadwal(index) { 
+        let d = globalAdminData[index]; 
+        document.getElementById('jRow').value = JSON.stringify([d.row]); 
+        document.getElementById('jNama').innerText = "Peserta: " + d.Nama; 
+        document.getElementById('jLokasi').value = d.Lokasi_Ujian || "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; 
+        let tgl = new Date(d.Tanggal_Ujian); document.getElementById('jTanggal').value = !isNaN(tgl.getTime()) ? tgl.toISOString().split('T')[0] : ""; 
+        let wktFormat = formatWaktu24(d.Waktu_Ujian); document.getElementById('jWaktu').value = wktFormat !== '-' ? wktFormat : ""; 
+        document.getElementById('jSesi').value = d.Sesi_Ujian || ""; 
+        document.getElementById('jRuangan').value = d.Ruangan_Ujian || ""; 
+        document.getElementById('jUsername').value = d.Username_CAT || ""; 
+        document.getElementById('jPassword').value = d.Password_CAT || ""; 
+        new bootstrap.Modal(document.getElementById('modalJadwal')).show(); 
+    }
+    
+    function bukaJadwalMassal() { 
+        let checked = document.querySelectorAll('.chk-jadwal:checked'); 
+        if(checked.length === 0) return Swal.fire('Peringatan', 'Centang minimal satu peserta pada tabel!', 'warning'); 
+        let rowsArray = []; checked.forEach(chk => rowsArray.push(parseInt(chk.value))); 
+        document.getElementById('jRow').value = JSON.stringify(rowsArray); 
+        document.getElementById('jNama').innerText = checked.length + " Peserta Terpilih"; 
+        document.getElementById('jLokasi').value = "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; 
+        document.getElementById('jTanggal').value = ""; 
+        document.getElementById('jWaktu').value = ""; 
+        document.getElementById('jSesi').value = ""; 
+        document.getElementById('jRuangan').value = ""; 
+        document.getElementById('jUsername').value = ""; 
+        document.getElementById('jPassword').value = ""; 
+        new bootstrap.Modal(document.getElementById('modalJadwal')).show(); 
+    }
+    
+    function simpanJadwal() { 
+        let rows = JSON.parse(document.getElementById('jRow').value); 
+        let dataJadwal = { 
+            Lokasi_Ujian: document.getElementById('jLokasi').value, 
+            Tanggal_Ujian: document.getElementById('jTanggal').value, 
+            Waktu_Ujian: document.getElementById('jWaktu').value, 
+            Sesi_Ujian: document.getElementById('jSesi').value, 
+            Ruangan_Ujian: document.getElementById('jRuangan').value, 
+            Username_CAT: document.getElementById('jUsername').value, 
+            Password_CAT: document.getElementById('jPassword').value 
+        }; 
+        btn = document.querySelector("#modalJadwal .btn-primary"); 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; 
+        google.script.run.withSuccessHandler(res => { 
+            btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; bootstrap.Modal.getInstance(document.getElementById('modalJadwal')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminJadwal(); document.getElementById('chkAll').checked = false; 
+        }).withFailureHandler(err => { 
+            btn.innerHTML = 'Simpan Jadwal'; btn.disabled = false; Swal.fire('Gagal Menyimpan', err.message, 'error'); 
+        }).saveJadwalMassal(rows, dataJadwal); 
+    }
 
     // ================= FUNGSI ADMIN USERS =================
     function loadUsers() {
        showSpinner(true);
        google.script.run.withSuccessHandler(res => {
           showSpinner(false);
-          globalDataUsers = res; // Simpan untuk filtering
-          applyFilterUsers(); // Panggil fungsi filter untuk render tabel pertama kali
+          globalDataUsers = res; 
+          applyFilterUsers(); 
        }).withFailureHandler(err => {
           showSpinner(false); console.error(err); 
        }).getSemuaUsers();
@@ -836,7 +904,6 @@
        });
     }
 
-    // PENCARIAN / FILTER DATA USER
     function applyFilterUsers() {
         let keyword = document.getElementById('filterUsers').value.toLowerCase();
         let limit = document.getElementById('limitUsers').value;
@@ -868,8 +935,8 @@
       showSpinner(true);
       google.script.run.withSuccessHandler(res => {
           showSpinner(false); 
-          globalDataCAT = res.filter(u => u.role !== 'Admin'); // Simpan untuk pencarian
-          applyFilterCAT(); // Panggil render tabel dengan filter default
+          globalDataCAT = res.filter(u => u.role !== 'Admin'); 
+          applyFilterCAT(); 
       }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaUsers();
     }
 
@@ -892,7 +959,6 @@
         });
     }
 
-    // PENCARIAN / FILTER DATA HASIL CAT ADMIN
     function applyFilterCAT() {
         let keyword = document.getElementById('filterCAT').value.toLowerCase();
         let limit = document.getElementById('limitCAT').value;
@@ -1072,7 +1138,9 @@
             let tglUjianFormat = new Date(res.Tanggal_Ujian).toLocaleDateString('id-ID', { weekday:'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('k_tgl').innerText = (res.Tanggal_Ujian ? tglUjianFormat : '-');
             let wktFormat = formatWaktu24(res.Waktu_Ujian); document.getElementById('k_waktu').innerText = wktFormat !== '-' ? wktFormat + ' WIB' : '-';
-            document.getElementById('k_sesi').innerText = (res.Sesi_Ujian || '-'); document.getElementById('k_user').innerText = (res.Username_CAT || '-'); document.getElementById('k_pass').innerText = (res.Password_CAT || '-');
+            document.getElementById('k_sesi').innerText = (res.Sesi_Ujian || '-'); 
+            document.getElementById('k_ruangan').innerText = (res.Ruangan_Ujian || '-');
+            document.getElementById('k_user').innerText = (res.Username_CAT || '-'); document.getElementById('k_pass').innerText = (res.Password_CAT || '-');
             kartu.classList.remove('d-none');
           }
         })
