@@ -26,29 +26,26 @@ export default async function handler(req, res) {
       throw new Error("Kredensial Database gagal dimuat. Pastikan TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN sudah disetting di Vercel.");
     }
 
-    const db = createClient({ url: dbUrl, authToken: dbToken });
+    // PERBAIKAN 1: Tambahkan intMode: 'bigint' untuk menangani NIP 18 digit agar tidak terjadi error 'too large integer'
+    const db = createClient({ url: dbUrl, authToken: dbToken, intMode: 'bigint' });
     const { action, args } = req.body;
     let result;
 
-    // AUTO-PATCH
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_kepribadian TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_profesional TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_sosial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN skor_total TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE users ADD COLUMN status_lulus_cat TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
-    // PERBAIKAN: Penambahan Kolom Ruangan Ujian
     try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
 
     switch (action) {
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
-        
         if (nip.toLowerCase() === 'admin' && pass.toLowerCase() === 'admin') {
             result = { status: "success", role: "Admin", nip: "admin", nama: "Administrator Sistem" };
-            return res.status(200).json({ result });
+            break;
         }
-
         const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
         if (users.length > 0) result = { status: "success", role: users[0].role, nip: users[0].nip, nama: users[0].nama };
         else result = { status: "error", message: "NIP atau Password salah!" };
@@ -197,9 +194,9 @@ export default async function handler(req, res) {
       case 'saveJadwalMassal':
         let nips = args[0]; let jd = args[1];
         for(let n of nips) {
-           let ucat = jd.Username_CAT || `CAT${n.toString().substring(0,6)}`;
-           let pcat = jd.Password_CAT || Math.floor(100000 + Math.random() * 900000);
-           // PERBAIKAN: Menambahkan field Ruangan_Ujian ke Database
+           // PERBAIKAN 2: Username CAT sekarang berawal dengan "TEST" + NIP Peserta (Contoh: TEST1985010101)
+           let ucat = jd.Username_CAT || `TEST${n}`;
+           let pcat = jd.Password_CAT || Math.floor(100000 + Math.random() * 900000).toString();
            await db.execute({ 
                sql: "UPDATE biodata SET lokasi_ujian=?, tanggal_ujian=?, waktu_ujian=?, sesi_ujian=?, ruangan_ujian=?, username_cat=?, password_cat=? WHERE nip=?", 
                args: [jd.Lokasi_Ujian, jd.Tanggal_Ujian, jd.Waktu_Ujian, jd.Sesi_Ujian, jd.Ruangan_Ujian, ucat, pcat, n] 
@@ -263,7 +260,10 @@ export default async function handler(req, res) {
         throw new Error(`Action '${action}' tidak dikenali oleh server.`);
     }
     
-    return res.status(200).json({ result });
+    // PERBAIKAN 3: Response JSON custom agar BigInt dapat diparsing dengan aman oleh JS frontend
+    return res.status(200).send(JSON.stringify({ result }, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+    ));
 
   } catch (error) {
     console.error("Vercel Server Error:", error);
