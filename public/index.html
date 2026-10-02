@@ -779,7 +779,23 @@
 
     // ================= FUNGSI ADMIN DATA & JADWAL =================
     function loadAdminDash() { google.script.run.withSuccessHandler(res => { let lengkap = 0; let proses = 0; res.forEach(d => { if(d.Status_Verifikasi === 'Berkas Lengkap') lengkap++; else proses++; }); document.getElementById('admTotal').innerText = res.length; document.getElementById('admLengkap').innerText = lengkap; document.getElementById('admProses').innerText = proses; }).withFailureHandler(err => console.error(err)).getSemuaBiodata(); }
-    function loadAdminData() { showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); globalAdminData = res; const tbody = document.getElementById('tbodyAdminData'); tbody.innerHTML = ''; res.forEach((d, index) => { let badge = d.Status_Verifikasi === 'Berkas Lengkap' ? 'bg-success' : (d.Status_Verifikasi === 'Berkas Ditolak' || d.Status_Verifikasi === 'Berkas Tidak Lengkap' ? 'bg-danger' : 'bg-warning text-dark'); tbody.innerHTML += `<tr><td>${d.NIP}</td><td>${d.Nama}<br><small class="text-muted">${d.Jenjang || '-'}</small></td><td><span class="badge ${badge}">${d.Status_Verifikasi || 'Belum Verifikasi'}</span><br><small>${d.Catatan || ''}</small></td><td><button class="btn btn-sm btn-primary" onclick="bukaVerifikasi(${index})">Cek & Aksi</button></td></tr>`; }); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata(); }
+    function loadAdminData() { 
+    showSpinner(true); 
+    google.script.run.withSuccessHandler(res => { 
+        showSpinner(false); 
+        globalAdminData = res; 
+        const tbody = document.getElementById('tbodyAdminData'); 
+        let html = ''; // PERBAIKAN: Gunakan String Builder agar 2000 baris diproses dalam milidetik
+        res.forEach((d, index) => { 
+            let badge = d.Status_Verifikasi === 'Berkas Lengkap' ? 'bg-success' : (d.Status_Verifikasi === 'Berkas Ditolak' || d.Status_Verifikasi === 'Berkas Tidak Lengkap' ? 'bg-danger' : 'bg-warning text-dark'); 
+            html += `<tr><td>${d.NIP}</td><td>${d.Nama}<br><small class="text-muted">${d.Jenjang || '-'}</small></td><td><span class="badge ${badge}">${d.Status_Verifikasi || 'Belum Verifikasi'}</span><br><small>${d.Catatan || ''}</small></td><td><button class="btn btn-sm btn-primary" onclick="bukaVerifikasi(${index})">Cek & Aksi</button></td></tr>`; 
+        }); 
+        tbody.innerHTML = html || `<tr><td colspan="4" class="text-center text-muted">Belum ada data peserta.</td></tr>`;
+    }).withFailureHandler(err => { 
+        showSpinner(false); 
+        Swal.fire('Error', err.message, 'error'); 
+    }).getSemuaBiodata(); 
+}
     function bukaVerifikasi(index) { let d = globalAdminData[index]; document.getElementById('mNama').innerText = d.Nama; document.getElementById('mRow').value = d.row; document.getElementById('mStatus').value = d.Status_Verifikasi || "Belum Verifikasi"; document.getElementById('mCatatan').value = d.Catatan || ""; let files = ['Foto','Ijazah','Sertifikat','SK','SKP','Sehat','SKCK','Pakta','Manajerial']; let linksHTML = ''; files.forEach(f => { if(d[f]) linksHTML += `<li><i class="fas fa-link"></i> <a href="${d[f]}" target="_blank">${f}</a></li>`; else linksHTML += `<li><i class="fas fa-times text-danger"></i> ${f} (Belum Upload)</li>`; }); document.getElementById('mLinks').innerHTML = linksHTML; new bootstrap.Modal(document.getElementById('modalVerifikasi')).show(); }
     function simpanVerifikasi() { let row = document.getElementById('mRow').value; let status = document.getElementById('mStatus').value; let cat = document.getElementById('mCatatan').value; google.script.run.withSuccessHandler(() => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Berhasil', 'Status verifikasi berhasil disimpan!', 'success'); loadAdminData(); loadAdminDash(); loadAdminJadwal(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).verifyBerkas(row, status, cat); }
     function hapusData() { Swal.fire({ title: 'Yakin hapus biodata peserta ini?', text: "Data yang dihapus tidak dapat dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Hapus!' }).then((result) => { if (result.isConfirmed) { let row = document.getElementById('mRow').value; google.script.run.withSuccessHandler((res) => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Terhapus!', res, 'success'); loadAdminData(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).hapusPeserta(row); } }); }
@@ -816,24 +832,28 @@
     function toggleAllJadwal(source) { const checkboxes = document.querySelectorAll('.chk-jadwal'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
     
     function loadAdminJadwal() { 
-        showSpinner(true); 
-        google.script.run.withSuccessHandler(res => { 
-            showSpinner(false); globalAdminData = res; 
-            const tbody = document.getElementById('tbodyAdminJadwal'); tbody.innerHTML = ''; 
-            res.forEach((d, index) => { 
-                if (d.Status_Verifikasi === 'Berkas Lengkap') { 
-                    let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; 
-                    let wktFormat = formatWaktu24(d.Waktu_Ujian); 
-                    let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; 
-                    let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); 
-                    let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; 
-                    let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; 
-                    tbody.innerHTML += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'} | <b>Ruangan:</b> ${d.Ruangan_Ujian || '-'}</small></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; 
-                } 
-            }); 
-            if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; 
-        }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata(); 
-    }
+    showSpinner(true); 
+    google.script.run.withSuccessHandler(res => { 
+        showSpinner(false); 
+        globalAdminData = res; 
+        const tbody = document.getElementById('tbodyAdminJadwal'); 
+        let html = ''; // PERBAIKAN Performa
+        res.forEach((d, index) => { 
+            if (d.Status_Verifikasi === 'Berkas Lengkap') { 
+                let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; 
+                let wktFormat = formatWaktu24(d.Waktu_Ujian); 
+                let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; 
+                let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); 
+                let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; 
+                let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; 
+                html += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'} | <b>Ruangan:</b> ${d.Ruangan_Ujian || '-'}</small></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; 
+            } 
+        }); 
+        tbody.innerHTML = html || `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; 
+    }).withFailureHandler(err => { 
+        showSpinner(false); Swal.fire('Error', err.message, 'error'); 
+    }).getSemuaBiodata(); 
+}
     
     function bukaJadwal(index) { 
         let d = globalAdminData[index]; 
@@ -850,21 +870,24 @@
     }
     
     function bukaJadwalMassal() { 
-        let checked = document.querySelectorAll('.chk-jadwal:checked'); 
-        if(checked.length === 0) return Swal.fire('Peringatan', 'Centang minimal satu peserta pada tabel!', 'warning'); 
-        let rowsArray = []; checked.forEach(chk => rowsArray.push(parseInt(chk.value))); 
-        document.getElementById('jRow').value = JSON.stringify(rowsArray); 
-        document.getElementById('jNama').innerText = checked.length + " Peserta Terpilih"; 
-        document.getElementById('jLokasi').value = "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; 
-        document.getElementById('jTanggal').value = ""; 
-        document.getElementById('jWaktu').value = ""; 
-        document.getElementById('jSesi').value = ""; 
-        document.getElementById('jRuangan').value = ""; 
-        document.getElementById('jUsername').value = ""; 
-        document.getElementById('jPassword').value = ""; 
-        new bootstrap.Modal(document.getElementById('modalJadwal')).show(); 
-    }
+    let checked = document.querySelectorAll('.chk-jadwal:checked'); 
+    if(checked.length === 0) return Swal.fire('Peringatan', 'Centang minimal satu peserta pada tabel!', 'warning'); 
     
+    let rowsArray = []; 
+    // PERBAIKAN: Hapus fungsi `parseInt()` agar NIP (18 angka) tidak dibulatkan dan rusak
+    checked.forEach(chk => rowsArray.push(chk.value)); 
+    
+    document.getElementById('jRow').value = JSON.stringify(rowsArray); 
+    document.getElementById('jNama').innerText = checked.length + " Peserta Terpilih"; 
+    document.getElementById('jLokasi').value = "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; 
+    document.getElementById('jTanggal').value = ""; 
+    document.getElementById('jWaktu').value = ""; 
+    document.getElementById('jSesi').value = ""; 
+    document.getElementById('jRuangan').value = ""; 
+    document.getElementById('jUsername').value = ""; 
+    document.getElementById('jPassword').value = ""; 
+    new bootstrap.Modal(document.getElementById('modalJadwal')).show(); 
+}    
     function simpanJadwal() { 
         let rows = JSON.parse(document.getElementById('jRow').value); 
         let dataJadwal = { 
@@ -897,18 +920,20 @@
        }).getSemuaUsers();
     }
 
-    function renderAdminUsersTable(data) {
-       const tbody = document.getElementById('tbodyUsers'); tbody.innerHTML = ''; 
-       if(data.length === 0) {
-           tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
-           return;
-       }
-       data.forEach(u => { 
-           let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
-           tbody.innerHTML += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
-       });
-    }
-
+   function renderAdminUsersTable(data) {
+   const tbody = document.getElementById('tbodyUsers'); 
+   if(data.length === 0) {
+       tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+       return;
+   }
+   let html = ''; // PERBAIKAN Performa
+   data.forEach(u => { 
+       let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
+       html += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
+   });
+   tbody.innerHTML = html;
+}
+    
     function applyFilterUsers() {
         let keyword = document.getElementById('filterUsers').value.toLowerCase();
         let limit = document.getElementById('limitUsers').value;
@@ -946,24 +971,25 @@
     }
 
     function renderAdminCATTable(data) {
-        const tbody = document.getElementById('tbodyAdminCAT'); 
-        tbody.innerHTML = '';
-        if(data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
-            return;
-        }
-        data.forEach(u => {
-            let badge = u.status_lulus_cat === 'LULUS' ? 'bg-success' : (u.status_lulus_cat === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
-            tbody.innerHTML += `<tr>
-                <td><input type="checkbox" class="form-check-input check-cat" value="${u.nip}"></td>
-                <td>${u.nip}</td><td class="text-start fw-bold">${u.nama}</td>
-                <td>${u.skor_kepribadian || '-'}</td><td>${u.skor_profesional || '-'}</td><td>${u.skor_sosial || '-'}</td>
-                <td class="fw-bold text-primary">${u.skor_total || '-'}</td>
-                <td><span class="badge ${badge} p-2">${u.status_lulus_cat || 'Belum Diset'}</span></td>
-            </tr>`;
-        });
+    const tbody = document.getElementById('tbodyAdminCAT'); 
+    if(data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+        return;
     }
-
+    let html = ''; // PERBAIKAN Performa
+    data.forEach(u => {
+        let badge = u.status_lulus_cat === 'LULUS' ? 'bg-success' : (u.status_lulus_cat === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
+        html += `<tr>
+            <td><input type="checkbox" class="form-check-input check-cat" value="${u.nip}"></td>
+            <td>${u.nip}</td><td class="text-start fw-bold">${u.nama}</td>
+            <td>${u.skor_kepribadian || '-'}</td><td>${u.skor_profesional || '-'}</td><td>${u.skor_sosial || '-'}</td>
+            <td class="fw-bold text-primary">${u.skor_total || '-'}</td>
+            <td><span class="badge ${badge} p-2">${u.status_lulus_cat || 'Belum Diset'}</span></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+    
     function applyFilterCAT() {
         let keyword = document.getElementById('filterCAT').value.toLowerCase();
         let limit = document.getElementById('limitCAT').value;
