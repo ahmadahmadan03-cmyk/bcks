@@ -1120,28 +1120,93 @@
         .getBiodataPegawai(nip);
     }
 
-    async function submitBiodata() {
-      if(globalBatasWaktu && globalBatasWaktu !== "" && new Date() > new Date(globalBatasWaktu)){ return Swal.fire('Gagal', 'Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya', 'error'); }
-
-      const btn = document.getElementById('btnSubmitBio'); let fileInputs = document.querySelectorAll('.bioFile'); let filesToUpload = [];
-
-      for (let input of fileInputs) {
-        if (input.files.length > 0) {
-          let f = input.files[0];
-          if (f.size > 2097152) return Swal.fire('Gagal', 'Ukuran file ' + input.getAttribute('data-name') + ' melebihi 2MB!', 'error');
-          let ext = f.name.split('.').pop().toLowerCase(); if (!['pdf', 'jpg', 'jpeg', 'png'].includes(ext)) return Swal.fire('Gagal', 'Format file ' + input.getAttribute('data-name') + ' tidak valid!', 'error');
-          let b64 = await toBase64(f); filesToUpload.push({ name: input.getAttribute('data-name'), base64: b64 });
-        }
+async function submitBiodata() {
+      if(globalBatasWaktu && globalBatasWaktu !== "" && new Date() > new Date(globalBatasWaktu)){ 
+          return Swal.fire('Gagal', 'Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya', 'error'); 
       }
 
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah Data & File...'; btn.disabled = true;
+      // ==========================================
+      // 1. VALIDASI KOLOM INPUT TEKS & TANGGAL
+      // ==========================================
+      const requiredInputs = [
+          { id: 'bioNIK', name: 'NIK' },
+          { id: 'bioNUPTK', name: 'NUPTK' },
+          { id: 'bioTempat', name: 'Tempat Lahir' },
+          { id: 'bioTgl', name: 'Tanggal Lahir' },
+          { id: 'bioJabatan', name: 'Jabatan' },
+          { id: 'bioUnit', name: 'Unit Kerja' },
+          { id: 'bioEmail', name: 'Email' },
+          { id: 'bioHP', name: 'No HP' },
+          { id: 'bioAlamat', name: 'Alamat' }
+      ];
 
-      let formData = { NIP: document.getElementById('bioNIP').value, Nama: document.getElementById('bioNama').value, Jenjang: document.getElementById('bioJenjang').value, NIK: document.getElementById('bioNIK').value, NUPTK: document.getElementById('bioNUPTK').value, Tempat_Lahir: document.getElementById('bioTempat').value, Tanggal_Lahir: document.getElementById('bioTgl').value, Jenis_Kelamin: document.getElementById('bioJK').value, Agama: document.getElementById('bioAgama').value, Pangkat_Golongan: document.getElementById('bioGol').value, Jabatan: document.getElementById('bioJabatan').value, Unit_Kerja: document.getElementById('bioUnit').value, Email: document.getElementById('bioEmail').value, No_HP: document.getElementById('bioHP').value, Alamat: document.getElementById('bioAlamat').value, ...oldFiles };
+      for (let field of requiredInputs) {
+          let el = document.getElementById(field.id);
+          if (!el || !el.value.trim()) {
+              return Swal.fire('Peringatan', 'Harap melengkapi data: ' + field.name + ' belum terisi!', 'warning');
+          }
+      }
+
+      // ==========================================
+      // 2. VALIDASI UPLOAD BERKAS & PROSES FILE
+      // ==========================================
+      let fileInputs = document.querySelectorAll('.bioFile'); 
+      let filesToUpload = [];
+
+      for (let input of fileInputs) {
+          let docName = input.getAttribute('data-name');
+          
+          // Cek apakah belum ada file baru JIKA sebelumnya belum pernah upload (di database masih kosong)
+          if (input.files.length === 0 && (!oldFiles || !oldFiles['old_' + docName])) {
+              return Swal.fire('Peringatan', 'Harap mengunggah berkas yang wajib diisi: ' + docName, 'warning');
+          }
+
+          // Proses validasi ukuran & ekstensi jika ada file baru yang dipilih
+          if (input.files.length > 0) {
+              let f = input.files[0];
+              if (f.size > 2097152) return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi 2MB!', 'error');
+              
+              let ext = f.name.split('.').pop().toLowerCase(); 
+              if (!['pdf', 'jpg', 'jpeg', 'png'].includes(ext)) {
+                  return Swal.fire('Gagal', 'Format file ' + docName + ' tidak valid!', 'error');
+              }
+              
+              let b64 = await toBase64(f); 
+              filesToUpload.push({ name: docName, base64: b64 });
+          }
+      }
+
+      // Jika lolos semua validasi, lanjutkan proses simpan
+      const btn = document.getElementById('btnSubmitBio');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah Data & File...'; 
+      btn.disabled = true;
+
+      let formData = { 
+          NIP: document.getElementById('bioNIP').value, 
+          Nama: document.getElementById('bioNama').value, 
+          Jenjang: document.getElementById('bioJenjang').value, 
+          NIK: document.getElementById('bioNIK').value, 
+          NUPTK: document.getElementById('bioNUPTK').value, 
+          Tempat_Lahir: document.getElementById('bioTempat').value, 
+          Tanggal_Lahir: document.getElementById('bioTgl').value, 
+          Jenis_Kelamin: document.getElementById('bioJK').value, 
+          Agama: document.getElementById('bioAgama').value, 
+          Pangkat_Golongan: document.getElementById('bioGol').value, 
+          Jabatan: document.getElementById('bioJabatan').value, 
+          Unit_Kerja: document.getElementById('bioUnit').value, 
+          Email: document.getElementById('bioEmail').value, 
+          No_HP: document.getElementById('bioHP').value, 
+          Alamat: document.getElementById('bioAlamat').value, 
+          ...oldFiles 
+      };
       
       google.script.run
         .withSuccessHandler(res => { 
-           if(res.includes("sudah selesai")) { Swal.fire('Waktu Habis', res, 'error'); } 
-           else { Swal.fire({ icon: 'success', title: 'Berhasil', text: res }); } 
+           if(res.includes("sudah selesai")) { 
+               Swal.fire('Waktu Habis', res, 'error'); 
+           } else { 
+               Swal.fire({ icon: 'success', title: 'Berhasil', text: res }); 
+           } 
            loadPegawaiBio(); 
         })
         .withFailureHandler(err => { 
