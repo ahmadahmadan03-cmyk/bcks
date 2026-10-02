@@ -197,7 +197,7 @@ export default async function handler(req, res) {
       case 'saveJadwalMassal':
         let nips = args[0]; let jd = args[1];
         for(let n of nips) {
-           let ucat = jd.Username_CAT || `CAT${n.toString().substring(0,6)}`;
+           let ucat = jd.Username_CAT || `TEST${n.toString().substring(0,6)}`;
            let pcat = jd.Password_CAT || Math.floor(100000 + Math.random() * 900000);
            // PERBAIKAN: Menambahkan field Ruangan_Ujian ke Database
            await db.execute({ 
