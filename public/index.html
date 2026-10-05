@@ -921,18 +921,18 @@
     }
 
    function renderAdminUsersTable(data) {
-       const tbody = document.getElementById('tbodyUsers'); 
-       if(data.length === 0) {
-           tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
-           return;
-       }
-       let html = ''; // PERBAIKAN Performa
-       data.forEach(u => { 
-           let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
-           html += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
-       });
-       tbody.innerHTML = html;
+   const tbody = document.getElementById('tbodyUsers'); 
+   if(data.length === 0) {
+       tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+       return;
    }
+   let html = ''; // PERBAIKAN Performa
+   data.forEach(u => { 
+       let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
+       html += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
+   });
+   tbody.innerHTML = html;
+}
     
     function applyFilterUsers() {
         let keyword = document.getElementById('filterUsers').value.toLowerCase();
