@@ -1,5 +1,14 @@
 import { createClient } from '@libsql/client/web';
 
+// PERBAIKAN: Memaksa Vercel untuk menerima ukuran file hingga 10MB per request
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 async function uploadToDrive(base64Data, filename, isFoto) {
     const gasUrl = process.env.GAS_UPLOAD_URL;
     if (!gasUrl) throw new Error("GAS_UPLOAD_URL belum disetting di Vercel Environment Variables.");
@@ -26,7 +35,6 @@ export default async function handler(req, res) {
       throw new Error("Kredensial Database gagal dimuat. Pastikan TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN sudah disetting di Vercel.");
     }
 
-    // PERBAIKAN 1: Tambahkan intMode: 'bigint' untuk menangani NIP 18 digit agar tidak terjadi error 'too large integer'
     const db = createClient({ url: dbUrl, authToken: dbToken, intMode: 'bigint' });
     const { action, args } = req.body;
     let result;
@@ -55,13 +63,13 @@ export default async function handler(req, res) {
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
         const { rows: rPengumuman } = await db.execute("SELECT * FROM pengumuman ORDER BY rowid DESC");
         
-        let config = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false" };
+        let configData = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false" };
         rPeng.forEach(row => {
-           if(row.kunci === "Batas_Waktu" && row.nilai) config.Batas_Waktu = new Date(row.nilai).toISOString();
-           if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) config.Buka_Pengumuman_CAT = row.nilai;
+           if(row.kunci === "Batas_Waktu" && row.nilai) configData.Batas_Waktu = new Date(row.nilai).toISOString();
+           if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) configData.Buka_Pengumuman_CAT = row.nilai;
         });
-        rPengumuman.forEach(p => config.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url }));
-        result = config;
+        rPengumuman.forEach(p => configData.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url }));
+        result = configData;
         break;
 
       case 'saveBatasWaktu':
@@ -194,7 +202,6 @@ export default async function handler(req, res) {
       case 'saveJadwalMassal':
         let nips = args[0]; let jd = args[1];
         for(let n of nips) {
-           // PERBAIKAN 2: Username CAT sekarang berawal dengan "TEST" + NIP Peserta (Contoh: TEST1985010101)
            let ucat = jd.Username_CAT || `TEST${n}`;
            let pcat = jd.Password_CAT || Math.floor(100000 + Math.random() * 900000).toString();
            await db.execute({ 
@@ -205,17 +212,16 @@ export default async function handler(req, res) {
         result = `Jadwal & Akun CAT berhasil disimpan untuk ${nips.length} peserta!`;
         break;
 
-      // 1. TAMBAHKAN ACTION BARU INI UNTUK UPLOAD SATU PER SATU
+      // PERBAIKAN: Action khusus agar proses kirim file ke Vercel terjadi satu-per-satu (Mengakali limit Vercel)
       case 'uploadSingleFile':
-        const fileData = args[0]; // Isinya: { nip, name, base64 }
+        const fileData = args[0]; 
         const upUrl = await uploadToDrive(fileData.base64, `${fileData.nip}_${fileData.name}`, fileData.name === 'Foto');
         result = upUrl;
         break;
 
-      // 2. UBAH ACTION 'saveBiodata' MENJADI SEPERTI INI
       case 'saveBiodata':
         let fd = args[0]; 
-        let fUrls = args[1]; // Sekarang menerima Object URL, bukan lagi Base64
+        let fUrls = args[1]; // Menerima URL Drive yang sudah di-generate satu persatu
         
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
@@ -223,48 +229,6 @@ export default async function handler(req, res) {
                 return res.status(200).json({ result: "Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya" });
             }
         }
-
-        // Ambil URL baru jika ada, atau gunakan URL lama jika peserta tidak update file tersebut
-        const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
-        const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
-        const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
-        const finalSK = fUrls['SK'] || fd.old_SK || '';
-        const finalSKP = fUrls['SKP'] || fd.old_SKP || '';
-        const finalSehat = fUrls['Sehat'] || fd.old_Sehat || '';
-        const finalSKCK = fUrls['SKCK'] || fd.old_SKCK || '';
-        const finalPakta = fUrls['Pakta'] || fd.old_Pakta || '';
-        const finalManajerial = fUrls['Manajerial'] || fd.old_Manajerial || '';
-
-        const cekData = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=?", args: [fd.NIP] });
-
-        if (cekData.rows.length > 0) {
-            const updateQ = `UPDATE biodata SET 
-              nama=?, jenjang=?, nik=?, nuptk=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, agama=?, pangkat_golongan=?, jabatan=?, unit_kerja=?, email=?, no_hp=?, alamat=?, status_verifikasi='Belum Verifikasi', catatan='',
-              foto=?, ijazah=?, sertifikat=?, sk=?, skp=?, sehat=?, skck=?, pakta=?, manajerial=? 
-              WHERE nip=?`;
-            
-            await db.execute({ sql: updateQ, args: [ fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial, fd.NIP ] });
-        } else {
-            const insertQ = `INSERT INTO biodata 
-              (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta, manajerial)
-            VALUES 
-              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-            
-            await db.execute({ sql: insertQ, args: [ fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial ] });
-        }
-        
-        result = "Data berhasil disimpan dan terkirim ke Admin!";
-        break;
-
-        let fUrls = {};
-        const uploadPromises = filesData.filter(f => f.base64).map(async (f) => {
-            const isFoto = (f.name === 'Foto');
-            const url = await uploadToDrive(f.base64, `${fd.NIP}_${f.name}`, isFoto);
-            return { name: f.name, url: url };
-        });
-        
-        const uploadResults = await Promise.all(uploadPromises);
-        uploadResults.forEach(res => { fUrls[res.name] = res.url; });
 
         const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
         const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
@@ -301,7 +265,6 @@ export default async function handler(req, res) {
         throw new Error(`Action '${action}' tidak dikenali oleh server.`);
     }
     
-    // PERBAIKAN 3: Response JSON custom agar BigInt dapat diparsing dengan aman oleh JS frontend
     return res.status(200).send(JSON.stringify({ result }, (key, value) =>
         typeof value === 'bigint' ? value.toString() : value
     ));
