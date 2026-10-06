@@ -205,8 +205,17 @@ export default async function handler(req, res) {
         result = `Jadwal & Akun CAT berhasil disimpan untuk ${nips.length} peserta!`;
         break;
 
+      // 1. TAMBAHKAN ACTION BARU INI UNTUK UPLOAD SATU PER SATU
+      case 'uploadSingleFile':
+        const fileData = args[0]; // Isinya: { nip, name, base64 }
+        const upUrl = await uploadToDrive(fileData.base64, `${fileData.nip}_${fileData.name}`, fileData.name === 'Foto');
+        result = upUrl;
+        break;
+
+      // 2. UBAH ACTION 'saveBiodata' MENJADI SEPERTI INI
       case 'saveBiodata':
-        let fd = args[0]; let filesData = args[1];
+        let fd = args[0]; 
+        let fUrls = args[1]; // Sekarang menerima Object URL, bukan lagi Base64
         
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
@@ -214,6 +223,38 @@ export default async function handler(req, res) {
                 return res.status(200).json({ result: "Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya" });
             }
         }
+
+        // Ambil URL baru jika ada, atau gunakan URL lama jika peserta tidak update file tersebut
+        const finalFoto = fUrls['Foto'] || fd.old_Foto || '';
+        const finalIjazah = fUrls['Ijazah'] || fd.old_Ijazah || '';
+        const finalSertifikat = fUrls['Sertifikat'] || fd.old_Sertifikat || '';
+        const finalSK = fUrls['SK'] || fd.old_SK || '';
+        const finalSKP = fUrls['SKP'] || fd.old_SKP || '';
+        const finalSehat = fUrls['Sehat'] || fd.old_Sehat || '';
+        const finalSKCK = fUrls['SKCK'] || fd.old_SKCK || '';
+        const finalPakta = fUrls['Pakta'] || fd.old_Pakta || '';
+        const finalManajerial = fUrls['Manajerial'] || fd.old_Manajerial || '';
+
+        const cekData = await db.execute({ sql: "SELECT nip FROM biodata WHERE nip=?", args: [fd.NIP] });
+
+        if (cekData.rows.length > 0) {
+            const updateQ = `UPDATE biodata SET 
+              nama=?, jenjang=?, nik=?, nuptk=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, agama=?, pangkat_golongan=?, jabatan=?, unit_kerja=?, email=?, no_hp=?, alamat=?, status_verifikasi='Belum Verifikasi', catatan='',
+              foto=?, ijazah=?, sertifikat=?, sk=?, skp=?, sehat=?, skck=?, pakta=?, manajerial=? 
+              WHERE nip=?`;
+            
+            await db.execute({ sql: updateQ, args: [ fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial, fd.NIP ] });
+        } else {
+            const insertQ = `INSERT INTO biodata 
+              (nip, nama, jenjang, nik, nuptk, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, pangkat_golongan, jabatan, unit_kerja, email, no_hp, alamat, status_verifikasi, catatan, foto, ijazah, sertifikat, sk, skp, sehat, skck, pakta, manajerial)
+            VALUES 
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Verifikasi', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            
+            await db.execute({ sql: insertQ, args: [ fd.NIP, fd.Nama, fd.Jenjang, fd.NIK, fd.NUPTK, fd.Tempat_Lahir, fd.Tanggal_Lahir, fd.Jenis_Kelamin, fd.Agama, fd.Pangkat_Golongan, fd.Jabatan, fd.Unit_Kerja, fd.Email, fd.No_HP, fd.Alamat, finalFoto, finalIjazah, finalSertifikat, finalSK, finalSKP, finalSehat, finalSKCK, finalPakta, finalManajerial ] });
+        }
+        
+        result = "Data berhasil disimpan dan terkirim ke Admin!";
+        break;
 
         let fUrls = {};
         const uploadPromises = filesData.filter(f => f.base64).map(async (f) => {
