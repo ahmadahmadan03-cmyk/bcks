@@ -1147,9 +1147,9 @@ async function submitBiodata() {
       let fileInputs = document.querySelectorAll('.bioFile'); 
       let filesToUpload = [];
       
-      // PERBAIKAN KRUSIAL: Batas aman diset ke 1.5 MB (1.572.864 Bytes)
-      // Hal ini mencegah Base64 meledak melewati 4.5MB dan mencegah Vercel Timeout 10 detik (Error 500)
-      const MAX_FILE_SIZE = 1572864; 
+      // PERBAIKAN: Batas maksimal dikembalikan ke 2 MB PER FILE (2.097.152 Bytes).
+      // Total keseluruhan 20MB tetap aman karena dikirim satu per satu ke server.
+      const MAX_FILE_SIZE = 2097152; 
 
       for (let input of fileInputs) {
           let docName = input.getAttribute('data-name');
@@ -1162,7 +1162,7 @@ async function submitBiodata() {
               let f = input.files[0];
               
               if (f.size > MAX_FILE_SIZE) {
-                  return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi batas aman 1.5 MB! Mohon kompres ukuran file Anda lalu coba lagi.', 'error');
+                  return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi batas 2 MB! Mohon kompres file Anda.', 'error');
               }
               
               let ext = f.name.split('.').pop().toLowerCase(); 
@@ -1182,25 +1182,41 @@ async function submitBiodata() {
       let uploadedUrls = {};
       
       try {
-          // Upload satu per satu untuk menghindari tabrakan ukuran Vercel
+          // PERBAIKAN: Sistem Auto-Retry. Jika Vercel Timeout (Error 500) karena proses 
+          // melebihi 10 detik, sistem akan mencoba ulang otomatis hingga 3x per file.
           for (let i = 0; i < filesToUpload.length; i++) {
               let f = filesToUpload[i];
-              btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mengunggah ${f.name} (${i + 1}/${filesToUpload.length})...`;
-              
-              let url = await new Promise((resolve, reject) => {
-                  google.script.run
-                      .withSuccessHandler(res => resolve(res))
-                      .withFailureHandler(err => reject(err))
-                      .uploadSingleFile({ nip: nipValue, name: f.name, base64: f.base64 });
-              });
-              
+              let attempt = 0;
+              let success = false;
+              let url = "";
+
+              while (attempt < 3 && !success) {
+                  try {
+                      if (attempt > 0) {
+                          btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mengunggah ${f.name} (${i + 1}/${filesToUpload.length}) <br> <small>(Mencoba ulang ${attempt}/3...)</small>`;
+                      } else {
+                          btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mengunggah ${f.name} (${i + 1}/${filesToUpload.length})...`;
+                      }
+
+                      url = await new Promise((resolve, reject) => {
+                          google.script.run
+                              .withSuccessHandler(res => resolve(res))
+                              .withFailureHandler(err => reject(err))
+                              .uploadSingleFile({ nip: nipValue, name: f.name, base64: f.base64 });
+                      });
+                      success = true;
+                  } catch (err) {
+                      attempt++;
+                      if (attempt >= 3) throw err; // Jika gagal 3x berturut-turut, lempar ke error utama
+                      await new Promise(r => setTimeout(r, 1500)); // Jeda 1.5 detik sebelum mencoba lagi
+                  }
+              }
               uploadedUrls[f.name] = url;
           }
       } catch (error) {
           btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim';
           btn.disabled = false;
-          let errMsg = typeof error === 'object' ? error.message : error;
-          return Swal.fire('Gagal!', 'Kesalahan jaringan saat mengunggah file:\n' + errMsg + '\nMohon ulangi.', 'error');
+          return Swal.fire('Gagal!', 'Server sibuk/Timeout saat mengunggah file. Pastikan koneksi stabil dan ulangi lagi.', 'error');
       }
 
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Data Biodata...'; 
@@ -1234,7 +1250,7 @@ async function submitBiodata() {
            loadPegawaiBio(); 
         })
         .withFailureHandler(err => { 
-           Swal.fire('Gagal!', 'Terjadi kesalahan sistem: ' + err.message, 'error'); 
+           Swal.fire('Gagal!', 'Terjadi kesalahan sistem saat menyimpan biodata: ' + err.message, 'error'); 
            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim'; 
            btn.disabled = false; 
         })
