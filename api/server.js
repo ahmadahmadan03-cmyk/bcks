@@ -1,10 +1,11 @@
 import { createClient } from '@libsql/client/web';
 
-// PERBAIKAN: Memaksa Vercel untuk menerima ukuran file hingga 10MB per request
+// PERBAIKAN KRUSIAL: Set batas maksimal di 4.5mb (Batas maksimal akun Vercel gratis). 
+// Jika diset lebih besar dari 4.5mb, Vercel akan otomatis me-reset ke 1MB sehingga menyebabkan Error 413.
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: '4.5mb',
     },
   },
 };
@@ -13,15 +14,27 @@ async function uploadToDrive(base64Data, filename, isFoto) {
     const gasUrl = process.env.GAS_UPLOAD_URL;
     if (!gasUrl) throw new Error("GAS_UPLOAD_URL belum disetting di Vercel Environment Variables.");
     
-    const response = await fetch(gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64: base64Data, filename: filename, isFoto: isFoto })
-    });
-    
-    const data = await response.json();
-    if (data.status !== "success") throw new Error("Gagal upload ke Google Drive: " + data.message);
-    return data.url;
+    try {
+        const response = await fetch(gasUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ base64: base64Data, filename: filename, isFoto: isFoto })
+        });
+        
+        // Membaca text terlebih dahulu untuk mengantisipasi Google Script error/timeout
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error("Koneksi ke Google Drive bermasalah atau terputus. Respons: " + text.substring(0, 50));
+        }
+        
+        if (data.status !== "success") throw new Error("Gagal upload ke Google Drive: " + data.message);
+        return data.url;
+    } catch (err) {
+        throw new Error("Gagal menghubungi server Google: " + err.message);
+    }
 }
 
 export default async function handler(req, res) {
@@ -212,7 +225,6 @@ export default async function handler(req, res) {
         result = `Jadwal & Akun CAT berhasil disimpan untuk ${nips.length} peserta!`;
         break;
 
-      // PERBAIKAN: Action khusus agar proses kirim file ke Vercel terjadi satu-per-satu (Mengakali limit Vercel)
       case 'uploadSingleFile':
         const fileData = args[0]; 
         const upUrl = await uploadToDrive(fileData.base64, `${fileData.nip}_${fileData.name}`, fileData.name === 'Foto');
@@ -221,7 +233,7 @@ export default async function handler(req, res) {
 
       case 'saveBiodata':
         let fd = args[0]; 
-        let fUrls = args[1]; // Menerima URL Drive yang sudah di-generate satu persatu
+        let fUrls = args[1]; // Menerima URL Drive saja, ukuran request akan sangat kecil
         
         const chkWaktu = await db.execute("SELECT nilai FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if(chkWaktu.rows.length > 0 && chkWaktu.rows[0].nilai) {
@@ -271,6 +283,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("Vercel Server Error:", error);
-    return res.status(500).json({ error: "Terjadi kesalahan sistem: " + error.message });
+    // Mengembalikan JSON standar agar bisa diparsing oleh frontend
+    return res.status(500).json({ error: error.message });
   }
 }
