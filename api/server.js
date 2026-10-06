@@ -1,7 +1,5 @@
 import { createClient } from '@libsql/client/web';
 
-// PERBAIKAN KRUSIAL: Set batas maksimal di 4.5mb (Batas maksimal akun Vercel gratis). 
-// Jika diset lebih besar dari 4.5mb, Vercel akan otomatis me-reset ke 1MB sehingga menyebabkan Error 413.
 export const config = {
   api: {
     bodyParser: {
@@ -10,6 +8,7 @@ export const config = {
   },
 };
 
+// ... kode lainnya ke bawah tetap sama ...
 async function uploadToDrive(base64Data, filename, isFoto) {
     const gasUrl = process.env.GAS_UPLOAD_URL;
     if (!gasUrl) throw new Error("GAS_UPLOAD_URL belum disetting di Vercel Environment Variables.");
