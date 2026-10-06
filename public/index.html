@@ -1125,7 +1125,6 @@ async function submitBiodata() {
           return Swal.fire('Gagal', 'Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya', 'error'); 
       }
 
-      // 1. VALIDASI KOLOM INPUT TEKS KOSONG
       const requiredInputs = [
           { id: 'bioNIK', name: 'NIK' },
           { id: 'bioNUPTK', name: 'NUPTK' },
@@ -1145,9 +1144,12 @@ async function submitBiodata() {
           }
       }
 
-      // 2. VALIDASI UPLOAD BERKAS
       let fileInputs = document.querySelectorAll('.bioFile'); 
       let filesToUpload = [];
+      
+      // PERBAIKAN KRUSIAL: Batas aman diset ke 1.5 MB (1.572.864 Bytes)
+      // Hal ini mencegah Base64 meledak melewati 4.5MB dan mencegah Vercel Timeout 10 detik (Error 500)
+      const MAX_FILE_SIZE = 1572864; 
 
       for (let input of fileInputs) {
           let docName = input.getAttribute('data-name');
@@ -1158,7 +1160,10 @@ async function submitBiodata() {
 
           if (input.files.length > 0) {
               let f = input.files[0];
-              if (f.size > 2097152) return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi 2MB!', 'error');
+              
+              if (f.size > MAX_FILE_SIZE) {
+                  return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi batas aman 1.5 MB! Mohon kompres ukuran file Anda lalu coba lagi.', 'error');
+              }
               
               let ext = f.name.split('.').pop().toLowerCase(); 
               if (!['pdf', 'jpg', 'jpeg', 'png'].includes(ext)) {
@@ -1174,15 +1179,14 @@ async function submitBiodata() {
       const nipValue = document.getElementById('bioNIP').value;
       btn.disabled = true;
 
-      // 3. UPLOAD BERKAS SATU PER SATU (MENCEGAH ERROR 413 VERCEL)
       let uploadedUrls = {};
       
       try {
+          // Upload satu per satu untuk menghindari tabrakan ukuran Vercel
           for (let i = 0; i < filesToUpload.length; i++) {
               let f = filesToUpload[i];
               btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mengunggah ${f.name} (${i + 1}/${filesToUpload.length})...`;
               
-              // Call Vercel (uploadSingleFile action)
               let url = await new Promise((resolve, reject) => {
                   google.script.run
                       .withSuccessHandler(res => resolve(res))
@@ -1195,10 +1199,10 @@ async function submitBiodata() {
       } catch (error) {
           btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim';
           btn.disabled = false;
-          return Swal.fire('Gagal!', 'Terjadi kesalahan saat mengunggah file. Silahkan coba lagi.', 'error');
+          let errMsg = typeof error === 'object' ? error.message : error;
+          return Swal.fire('Gagal!', 'Kesalahan jaringan saat mengunggah file:\n' + errMsg + '\nMohon ulangi.', 'error');
       }
 
-      // 4. SIMPAN BIODATA & URL KE DATABASE
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Data Biodata...'; 
 
       let formData = { 
@@ -1234,7 +1238,7 @@ async function submitBiodata() {
            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim'; 
            btn.disabled = false; 
         })
-        .saveBiodata(formData, uploadedUrls); // Mengirim `uploadedUrls`
+        .saveBiodata(formData, uploadedUrls);
     }
 
     const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
