@@ -1125,9 +1125,7 @@ async function submitBiodata() {
           return Swal.fire('Gagal', 'Maaf batas melengkapi data sudah selesai tidak menerima data baru lagi terimakasih atas kerjasamanya', 'error'); 
       }
 
-      // ==========================================
-      // 1. VALIDASI KOLOM INPUT TEKS & TANGGAL
-      // ==========================================
+      // 1. VALIDASI KOLOM INPUT TEKS KOSONG
       const requiredInputs = [
           { id: 'bioNIK', name: 'NIK' },
           { id: 'bioNUPTK', name: 'NUPTK' },
@@ -1147,21 +1145,17 @@ async function submitBiodata() {
           }
       }
 
-      // ==========================================
-      // 2. VALIDASI UPLOAD BERKAS & PROSES FILE
-      // ==========================================
+      // 2. VALIDASI UPLOAD BERKAS
       let fileInputs = document.querySelectorAll('.bioFile'); 
       let filesToUpload = [];
 
       for (let input of fileInputs) {
           let docName = input.getAttribute('data-name');
           
-          // Cek apakah belum ada file baru JIKA sebelumnya belum pernah upload (di database masih kosong)
           if (input.files.length === 0 && (!oldFiles || !oldFiles['old_' + docName])) {
               return Swal.fire('Peringatan', 'Harap mengunggah berkas yang wajib diisi: ' + docName, 'warning');
           }
 
-          // Proses validasi ukuran & ekstensi jika ada file baru yang dipilih
           if (input.files.length > 0) {
               let f = input.files[0];
               if (f.size > 2097152) return Swal.fire('Gagal', 'Ukuran file ' + docName + ' melebihi 2MB!', 'error');
@@ -1176,13 +1170,39 @@ async function submitBiodata() {
           }
       }
 
-      // Jika lolos semua validasi, lanjutkan proses simpan
       const btn = document.getElementById('btnSubmitBio');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengunggah Data & File...'; 
+      const nipValue = document.getElementById('bioNIP').value;
       btn.disabled = true;
 
+      // 3. UPLOAD BERKAS SATU PER SATU (MENCEGAH ERROR 413 VERCEL)
+      let uploadedUrls = {};
+      
+      try {
+          for (let i = 0; i < filesToUpload.length; i++) {
+              let f = filesToUpload[i];
+              btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Mengunggah ${f.name} (${i + 1}/${filesToUpload.length})...`;
+              
+              // Call Vercel (uploadSingleFile action)
+              let url = await new Promise((resolve, reject) => {
+                  google.script.run
+                      .withSuccessHandler(res => resolve(res))
+                      .withFailureHandler(err => reject(err))
+                      .uploadSingleFile({ nip: nipValue, name: f.name, base64: f.base64 });
+              });
+              
+              uploadedUrls[f.name] = url;
+          }
+      } catch (error) {
+          btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim';
+          btn.disabled = false;
+          return Swal.fire('Gagal!', 'Terjadi kesalahan saat mengunggah file. Silahkan coba lagi.', 'error');
+      }
+
+      // 4. SIMPAN BIODATA & URL KE DATABASE
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Data Biodata...'; 
+
       let formData = { 
-          NIP: document.getElementById('bioNIP').value, 
+          NIP: nipValue, 
           Nama: document.getElementById('bioNama').value, 
           Jenjang: document.getElementById('bioJenjang').value, 
           NIK: document.getElementById('bioNIK').value, 
@@ -1214,7 +1234,7 @@ async function submitBiodata() {
            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Simpan dan Kirim'; 
            btn.disabled = false; 
         })
-        .saveBiodata(formData, filesToUpload);
+        .saveBiodata(formData, uploadedUrls); // Mengirim `uploadedUrls`
     }
 
     const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
