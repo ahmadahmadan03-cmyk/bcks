@@ -61,35 +61,46 @@ export default async function handler(req, res) {
 
 switch (action) {
       // 1. PERBAIKAN: Update logika loginUser untuk mengecek akses
-      case 'loginUser':
+case 'loginUser':
         const nip = args[0]; const pass = args[1];
         
-        // Admin selalu bisa masuk bypass pengecekan
+        // Bypass untuk akun super admin default
         if (nip.toLowerCase() === 'admin' && pass.toLowerCase() === 'admin') {
             result = { status: "success", role: "Admin", nip: "admin", nama: "Administrator Sistem" };
             break;
         }
 
-        // Cek pengaturan apakah akses login peserta sedang ditutup
-        const { rows: rAkses } = await db.execute("SELECT kunci, nilai FROM pengaturan WHERE kunci IN ('Akses_Login_Peserta', 'Pesan_Tutup_Akses')");
-        let isClosed = false;
-        let closeMsg = "Akses login ditutup oleh Panitia.";
-        rAkses.forEach(row => {
-            if (row.kunci === 'Akses_Login_Peserta' && row.nilai === 'false') isClosed = true;
-            if (row.kunci === 'Pesan_Tutup_Akses' && row.nilai) closeMsg = row.nilai;
-        });
-
-        // Jika ditutup, tolak login dan tampilkan pesan
-        if (isClosed) {
-            result = { status: "error", message: closeMsg };
+        // 1. Cek kredensial di database terlebih dahulu untuk mengetahui role (Admin/Pegawai)
+        const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
+        
+        if (users.length === 0) {
+            result = { status: "error", message: "NIP atau Password salah!" };
             break;
         }
 
-        const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
-        if (users.length > 0) result = { status: "success", role: users[0].role, nip: users[0].nip, nama: users[0].nama };
-        else result = { status: "error", message: "NIP atau Password salah!" };
-        break;
+        const user = users[0];
 
+        // 2. Jika yang masuk adalah Peserta (Pegawai), cek status penutupan akses
+        if (user.role !== 'Admin') {
+            const { rows: rAkses } = await db.execute("SELECT kunci, nilai FROM pengaturan WHERE kunci IN ('Akses_Login_Peserta', 'Pesan_Tutup_Akses')");
+            let isClosed = false;
+            let closeMsg = "Akses login ditutup oleh Panitia.";
+            
+            rAkses.forEach(row => {
+                if (row.kunci === 'Akses_Login_Peserta' && row.nilai === 'false') isClosed = true;
+                if (row.kunci === 'Pesan_Tutup_Akses' && row.nilai) closeMsg = row.nilai;
+            });
+
+            // Jika akses ditutup, tolak proses login untuk peserta
+            if (isClosed) {
+                result = { status: "error", message: closeMsg };
+                break;
+            }
+        }
+
+        // 3. Jika berhasil melewati pengecekan di atas (atau jika role-nya Admin), izinkan masuk
+        result = { status: "success", role: user.role, nip: user.nip, nama: user.nama };
+        break;
       // 2. PERBAIKAN: Menarik data akses login ke Frontend
       case 'getPengaturanGlobal':
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
