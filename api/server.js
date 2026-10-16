@@ -59,31 +59,72 @@ export default async function handler(req, res) {
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
 
-    switch (action) {
+switch (action) {
+      // 1. PERBAIKAN: Update logika loginUser untuk mengecek akses
       case 'loginUser':
         const nip = args[0]; const pass = args[1];
+        
+        // Admin selalu bisa masuk bypass pengecekan
         if (nip.toLowerCase() === 'admin' && pass.toLowerCase() === 'admin') {
             result = { status: "success", role: "Admin", nip: "admin", nama: "Administrator Sistem" };
             break;
         }
+
+        // Cek pengaturan apakah akses login peserta sedang ditutup
+        const { rows: rAkses } = await db.execute("SELECT kunci, nilai FROM pengaturan WHERE kunci IN ('Akses_Login_Peserta', 'Pesan_Tutup_Akses')");
+        let isClosed = false;
+        let closeMsg = "Akses login ditutup oleh Panitia.";
+        rAkses.forEach(row => {
+            if (row.kunci === 'Akses_Login_Peserta' && row.nilai === 'false') isClosed = true;
+            if (row.kunci === 'Pesan_Tutup_Akses' && row.nilai) closeMsg = row.nilai;
+        });
+
+        // Jika ditutup, tolak login dan tampilkan pesan
+        if (isClosed) {
+            result = { status: "error", message: closeMsg };
+            break;
+        }
+
         const { rows: users } = await db.execute({ sql: "SELECT * FROM users WHERE nip = ? AND nik = ?", args: [nip, pass] });
         if (users.length > 0) result = { status: "success", role: users[0].role, nip: users[0].nip, nama: users[0].nama };
         else result = { status: "error", message: "NIP atau Password salah!" };
         break;
 
+      // 2. PERBAIKAN: Menarik data akses login ke Frontend
       case 'getPengaturanGlobal':
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
         const { rows: rPengumuman } = await db.execute("SELECT * FROM pengumuman ORDER BY rowid DESC");
         
-        let configData = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false" };
+        let configData = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false", Akses_Login: "true", Pesan_Tutup: "" };
         rPeng.forEach(row => {
            if(row.kunci === "Batas_Waktu" && row.nilai) configData.Batas_Waktu = new Date(row.nilai).toISOString();
            if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) configData.Buka_Pengumuman_CAT = row.nilai;
+           if(row.kunci === "Akses_Login_Peserta" && row.nilai) configData.Akses_Login = row.nilai;
+           if(row.kunci === "Pesan_Tutup_Akses" && row.nilai) configData.Pesan_Tutup = row.nilai;
         });
         rPengumuman.forEach(p => configData.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url }));
         result = configData;
         break;
 
+      // 3. TAMBAHKAN: Action baru untuk menyimpan pengaturan Buka/Tutup akses
+      case 'savePengaturanAkses':
+        let statusAkses = args[0]; 
+        let pesanTutup = args[1];
+
+        // Simpan Status Buka/Tutup (true/false)
+        let cAkses = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Akses_Login_Peserta'");
+        if (cAkses.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Akses_Login_Peserta'", args: [statusAkses] });
+        else await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Akses_Login_Peserta', ?)", args: [statusAkses] });
+
+        // Simpan Pesan Alasan Penutupan
+        let cPesan = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Pesan_Tutup_Akses'");
+        if (cPesan.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Pesan_Tutup_Akses'", args: [pesanTutup] });
+        else await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Pesan_Tutup_Akses', ?)", args: [pesanTutup] });
+
+        result = "Pengaturan akses login berhasil disimpan!";
+        break;
+
+      // ... (Action saveBatasWaktu dan lain-lain di bawah ini biarkan sama / jangan diubah)
       case 'saveBatasWaktu':
         const cekBatas = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Batas_Waktu'");
         if (cekBatas.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Batas_Waktu'", args: [args[0]] });
