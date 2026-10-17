@@ -59,6 +59,28 @@ export default async function handler(req, res) {
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
 
+    // =====================================================================
+    // PERBAIKAN: Middleware Pengecekan Akses Global Khusus Endpoint Peserta
+    // =====================================================================
+    const endpointPeserta = ['getBiodataPegawai', 'saveBiodata', 'getHasilCATPegawai', 'uploadSingleFile'];
+    
+    if (endpointPeserta.includes(action)) {
+        const { rows: rAkses } = await db.execute("SELECT kunci, nilai FROM pengaturan WHERE kunci IN ('Akses_Login_Peserta', 'Pesan_Tutup_Akses')");
+        let isClosed = false;
+        let closeMsg = "Akses login ditutup oleh Panitia.";
+        
+        rAkses.forEach(row => {
+            if (row.kunci === 'Akses_Login_Peserta' && row.nilai === 'false') isClosed = true;
+            if (row.kunci === 'Pesan_Tutup_Akses' && row.nilai) closeMsg = row.nilai;
+        });
+
+        // Jika akses ditutup, kembalikan respons error khusus untuk mengunci frontend
+        if (isClosed) {
+            return res.status(200).json({ error_akses: closeMsg });
+        }
+    }
+    // =====================================================================
+
 switch (action) {
       // 1. PERBAIKAN: Update logika loginUser untuk mengecek akses
 case 'loginUser':
