@@ -569,7 +569,7 @@
       }
     };
 
-    function createProxy(handlers) {
+function createProxy(handlers) {
       return new Proxy({}, {
         get: function(target, prop) {
           return async function(...args) {
@@ -589,6 +589,28 @@
               }
               
               if (!res.ok) throw new Error(data.error || 'Server error');
+
+              // =========================================================
+              // PERBAIKAN: Global Interceptor untuk Menendang Peserta
+              // =========================================================
+              if (data.error_akses) {
+                  // Pastikan fitur tendang ini tidak mengenai Admin
+                  if (localStorage.getItem('role') !== 'Admin') {
+                      Swal.fire({
+                          icon: 'error',
+                          title: 'Akses Ditutup',
+                          text: data.error_akses,
+                          confirmButtonText: 'OK Mengerti',
+                          allowOutsideClick: false // Memaksa peserta klik tombol OK
+                      }).then(() => {
+                          localStorage.clear(); // Hapus sesi
+                          checkSession();       // Lempar kembali ke halaman login
+                      });
+                      return; // Berhenti mengeksekusi script agar tabel/menu tidak macet
+                  }
+              }
+              // =========================================================
+
               if (handlers.success) handlers.success(data.result);
             } catch (err) {
               console.error(err);
