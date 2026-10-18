@@ -111,12 +111,32 @@
       </div>
     </div>
 
-    <!-- VIEW: ADMIN DATA PESERTA -->
+<!-- VIEW: ADMIN DATA PESERTA -->
     <div id="admin-data" class="view-section">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Verifikasi Data Peserta BCKS</h3>
         <button class="btn btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Unduh File Excel</button>
       </div>
+
+      <!-- FITUR BARU: Filter Pencarian & Dropdown Status -->
+      <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
+         <div class="col-md-5 d-flex align-items-center gap-2 mb-2 mb-md-0">
+             <span class="small fw-bold text-muted text-nowrap">Filter Status:</span>
+             <select id="filterStatusVerif" class="form-select form-select-sm shadow-sm" onchange="applyFilterAdminData()">
+                 <option value="ALL" selected>Semua Status</option>
+                 <option value="Belum Verifikasi">Belum Verifikasi</option>
+                 <option value="Berkas Lengkap">Sudah Verifikasi (Berkas Lengkap)</option>
+                 <option value="Berkas Ditolak">Berkas Ditolak / Tidak Lengkap</option>
+             </select>
+         </div>
+         <div class="col-md-7">
+             <div class="input-group input-group-sm shadow-sm">
+                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                 <input type="text" id="filterTextAdminData" class="form-control border-start-0" placeholder="Cari Nama / NIP..." oninput="applyFilterAdminData()">
+             </div>
+         </div>
+      </div>
+
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
         <table class="table table-bordered table-hover" id="tableAdminData">
           <thead class="table-primary"><tr><th>NIP</th><th>Nama</th><th>Status Berkas</th><th>Aksi / Verifikasi</th></tr></thead>
@@ -848,26 +868,78 @@ function loadAdminPengaturan() {
     async function simpanPengumumanDb() { let row = document.getElementById('pRow').value; let judul = document.getElementById('pJudul').value; let teks = document.getElementById('pTeks').value; let oldFile = document.getElementById('pOldFile').value; let fileInput = document.getElementById('pFile'); if(!judul || !teks) return Swal.fire('Peringatan', 'Judul dan Teks pengumuman wajib diisi!', 'warning'); let fileObj = null; if(fileInput.files.length > 0) { let f = fileInput.files[0]; if (f.size > 5242880) return Swal.fire('Gagal', 'Ukuran file surat pengumuman melebihi 5MB!', 'error'); let b64 = await toBase64(f); fileObj = { name: f.name, base64: b64 }; } let btn = document.getElementById('btnSimpanPeng'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; google.script.run.withSuccessHandler(res => { btn.innerHTML = '<i class="fas fa-save"></i> Simpan Pengumuman'; btn.disabled = false; bootstrap.Modal.getInstance(document.getElementById('modalPengumuman')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminPengaturan(); loadPengaturanGlobal(); }).withFailureHandler(err => { btn.innerHTML = '<i class="fas fa-save"></i> Simpan Pengumuman'; btn.disabled = false; Swal.fire('Gagal!', err.message, 'error'); }).savePengumuman(null, judul, teks, fileObj, oldFile, row); }
     function hapusPengumuman(row) { Swal.fire({ title: 'Hapus Pengumuman?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Ya, Hapus!' }).then((result) => { if (result.isConfirmed) { showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Terhapus!', res, 'success'); loadAdminPengaturan(); loadPengaturanGlobal(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).deletePengumuman(row); } }); }
 
-    // ================= FUNGSI ADMIN DATA & JADWAL =================
+// ================= FUNGSI ADMIN DATA & JADWAL =================
     function loadAdminDash() { google.script.run.withSuccessHandler(res => { let lengkap = 0; let proses = 0; res.forEach(d => { if(d.Status_Verifikasi === 'Berkas Lengkap') lengkap++; else proses++; }); document.getElementById('admTotal').innerText = res.length; document.getElementById('admLengkap').innerText = lengkap; document.getElementById('admProses').innerText = proses; }).withFailureHandler(err => console.error(err)).getSemuaBiodata(); }
+
     function loadAdminData() { 
-    showSpinner(true); 
-    google.script.run.withSuccessHandler(res => { 
-        showSpinner(false); 
-        globalAdminData = res; 
+        showSpinner(true); 
+        google.script.run.withSuccessHandler(res => { 
+            showSpinner(false); 
+            globalAdminData = res; 
+            applyFilterAdminData(); // Memanggil logika filter saat data pertama kali dimuat
+        }).withFailureHandler(err => { 
+            showSpinner(false); 
+            Swal.fire('Error', err.message, 'error'); 
+        }).getSemuaBiodata(); 
+    }
+
+    // FUNGSI BARU: Menerapkan filter pencarian dan dropdown status
+    function applyFilterAdminData() {
+        let keyword = document.getElementById('filterTextAdminData').value.toLowerCase();
+        let status = document.getElementById('filterStatusVerif').value;
+
+        let filtered = globalAdminData.filter(d => {
+            let matchText = (d.Nama && d.Nama.toLowerCase().includes(keyword)) || 
+                            (d.NIP && d.NIP.toLowerCase().includes(keyword));
+            
+            let matchStatus = true;
+            if (status !== "ALL") {
+                let dStatus = d.Status_Verifikasi || 'Belum Verifikasi';
+                if (status === "Berkas Ditolak") {
+                    matchStatus = (dStatus === 'Berkas Ditolak' || dStatus === 'Berkas Tidak Lengkap');
+                } else if (status === "Belum Verifikasi") {
+                    matchStatus = (dStatus === 'Belum Verifikasi' || dStatus.trim() === '');
+                } else {
+                    matchStatus = (dStatus === status);
+                }
+            }
+            return matchText && matchStatus;
+        });
+
+        renderAdminDataTable(filtered);
+    }
+
+    // FUNGSI BARU: Mencetak / merender baris HTML ke tabel
+    function renderAdminDataTable(data) {
         const tbody = document.getElementById('tbodyAdminData'); 
-        let html = ''; // PERBAIKAN: Gunakan String Builder agar 2000 baris diproses dalam milidetik
-        res.forEach((d, index) => { 
+        let html = ''; 
+        data.forEach((d) => { 
             let badge = d.Status_Verifikasi === 'Berkas Lengkap' ? 'bg-success' : (d.Status_Verifikasi === 'Berkas Ditolak' || d.Status_Verifikasi === 'Berkas Tidak Lengkap' ? 'bg-danger' : 'bg-warning text-dark'); 
-            html += `<tr><td>${d.NIP}</td><td>${d.Nama}<br><small class="text-muted">${d.Jenjang || '-'}</small></td><td><span class="badge ${badge}">${d.Status_Verifikasi || 'Belum Verifikasi'}</span><br><small>${d.Catatan || ''}</small></td><td><button class="btn btn-sm btn-primary" onclick="bukaVerifikasi(${index})">Cek & Aksi</button></td></tr>`; 
+            
+            // PERBAIKAN PENTING: Melempar d.NIP ke dalam fungsi bukaVerifikasi, bukan lagi melempar index urutan
+            html += `<tr><td>${d.NIP}</td><td>${d.Nama}<br><small class="text-muted">${d.Jenjang || '-'}</small></td><td><span class="badge ${badge}">${d.Status_Verifikasi || 'Belum Verifikasi'}</span><br><small>${d.Catatan || ''}</small></td><td><button class="btn btn-sm btn-primary" onclick="bukaVerifikasi('${d.NIP}')">Cek & Aksi</button></td></tr>`; 
         }); 
-        tbody.innerHTML = html || `<tr><td colspan="4" class="text-center text-muted">Belum ada data peserta.</td></tr>`;
-    }).withFailureHandler(err => { 
-        showSpinner(false); 
-        Swal.fire('Error', err.message, 'error'); 
-    }).getSemuaBiodata(); 
-}
-    function bukaVerifikasi(index) { let d = globalAdminData[index]; document.getElementById('mNama').innerText = d.Nama; document.getElementById('mRow').value = d.row; document.getElementById('mStatus').value = d.Status_Verifikasi || "Belum Verifikasi"; document.getElementById('mCatatan').value = d.Catatan || ""; let files = ['Foto','Ijazah','Sertifikat','SK','SKP','Sehat','SKCK','Pakta','Manajerial']; let linksHTML = ''; files.forEach(f => { if(d[f]) linksHTML += `<li><i class="fas fa-link"></i> <a href="${d[f]}" target="_blank">${f}</a></li>`; else linksHTML += `<li><i class="fas fa-times text-danger"></i> ${f} (Belum Upload)</li>`; }); document.getElementById('mLinks').innerHTML = linksHTML; new bootstrap.Modal(document.getElementById('modalVerifikasi')).show(); }
+        tbody.innerHTML = html || `<tr><td colspan="4" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+    }
+
+    // PERBAIKAN LOGIKA: Sekarang mencari data secara spesifik lewat pencocokan NIP, sehingga tidak salah baca data saat sedang difilter
+    function bukaVerifikasi(nip) { 
+        let d = globalAdminData.find(x => x.NIP === nip);
+        if(!d) return Swal.fire('Error', 'Data peserta tidak ditemukan pada tabel memori!', 'error');
+
+        document.getElementById('mNama').innerText = d.Nama; 
+        document.getElementById('mRow').value = d.row; 
+        document.getElementById('mStatus').value = d.Status_Verifikasi || "Belum Verifikasi"; 
+        document.getElementById('mCatatan').value = d.Catatan || ""; 
+        let files = ['Foto','Ijazah','Sertifikat','SK','SKP','Sehat','SKCK','Pakta','Manajerial']; 
+        let linksHTML = ''; 
+        files.forEach(f => { 
+            if(d[f]) linksHTML += `<li><i class="fas fa-link"></i> <a href="${d[f]}" target="_blank">${f}</a></li>`; 
+            else linksHTML += `<li><i class="fas fa-times text-danger"></i> ${f} (Belum Upload)</li>`; 
+        }); 
+        document.getElementById('mLinks').innerHTML = linksHTML; 
+        new bootstrap.Modal(document.getElementById('modalVerifikasi')).show(); 
+    }
     function simpanVerifikasi() { let row = document.getElementById('mRow').value; let status = document.getElementById('mStatus').value; let cat = document.getElementById('mCatatan').value; google.script.run.withSuccessHandler(() => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Berhasil', 'Status verifikasi berhasil disimpan!', 'success'); loadAdminData(); loadAdminDash(); loadAdminJadwal(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).verifyBerkas(row, status, cat); }
     function hapusData() { Swal.fire({ title: 'Yakin hapus biodata peserta ini?', text: "Data yang dihapus tidak dapat dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Hapus!' }).then((result) => { if (result.isConfirmed) { let row = document.getElementById('mRow').value; google.script.run.withSuccessHandler((res) => { bootstrap.Modal.getInstance(document.getElementById('modalVerifikasi')).hide(); Swal.fire('Terhapus!', res, 'success'); loadAdminData(); }).withFailureHandler(err => Swal.fire('Error', err.message, 'error')).hapusPeserta(row); } }); }
     function exportExcel() { var wb = XLSX.utils.book_new(); var exportData = globalAdminData.map(function(item) { var obj = Object.assign({}, item); delete obj.row; return obj; }); var ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, "DataPeserta"); XLSX.writeFile(wb, "Data_Peserta_BCKS.xlsx"); }
