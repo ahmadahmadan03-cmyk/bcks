@@ -241,21 +241,30 @@
       </div>
       
       <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
-         <div class="col-md-7 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
+         <div class="col-md-9 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
              <button class="btn btn-primary btn-sm shadow-sm" onclick="setLulusMassalCAT('LULUS')"><i class="fas fa-check"></i> Lulus Terpilih</button>
              <button class="btn btn-danger btn-sm shadow-sm" onclick="setLulusMassalCAT('TIDAK LULUS')"><i class="fas fa-times"></i> Tidak Lulus Terpilih</button>
-             <span class="small fw-bold text-muted ms-md-2 text-nowrap">Tampilkan:</span>
+             
+             <!-- FITUR BARU: Filter Status Kelulusan -->
+             <span class="small fw-bold text-muted ms-md-2 text-nowrap border-start ps-3">Status:</span>
+             <select id="filterStatusKelulusan" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterCAT()">
+                 <option value="ALL" selected>Semua</option>
+                 <option value="SUDAH">Sudah Setting Kelulusan</option>
+                 <option value="BELUM">Belum Setting Kelulusan</option>
+             </select>
+
+             <span class="small fw-bold text-muted ms-md-2 text-nowrap border-start ps-3">Tampilkan:</span>
              <select id="limitCAT" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterCAT()">
-                 <option value="10">10</option>
-                 <option value="50">50</option>
-                 <option value="100">100</option>
+                 <option value="10">10 Baris</option>
+                 <option value="50">50 Baris</option>
+                 <option value="100">100 Baris</option>
                  <option value="ALL" selected>Semua</option>
              </select>
          </div>
-         <div class="col-md-5">
+         <div class="col-md-3">
              <div class="input-group input-group-sm shadow-sm">
                  <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
-                 <input type="text" id="filterCAT" class="form-control border-start-0" placeholder="Cari Nama / NIP..." oninput="applyFilterCAT()">
+                 <input type="text" id="filterCAT" class="form-control border-start-0" placeholder="Cari Nama/NIP..." oninput="applyFilterCAT()">
              </div>
          </div>
       </div>
@@ -1167,53 +1176,77 @@ function loadAdminJadwal() {
     function prosesUploadUser() { let fileInput = document.getElementById('fileExcelUser'); if(fileInput.files.length === 0) return Swal.fire('Peringatan', 'Pilih file Excel terlebih dahulu!', 'warning'); let file = fileInput.files[0]; let reader = new FileReader(); reader.onload = function(e) { let workbook = XLSX.read(e.target.result, {type: 'binary'}); let excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); if(excelRows.length > 0 && excelRows[0][0] && excelRows[0][0].toString().toLowerCase().includes('nip')) excelRows.shift(); bootstrap.Modal.getInstance(document.getElementById('modalUploadUser')).hide(); showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).uploadTemplateUsersExcel(excelRows); }; reader.readAsBinaryString(file); }
 
     // ================= FUNGSI ADMIN HASIL CAT =================
+    // ================= FUNGSI ADMIN HASIL CAT =================
     function toggleAllCAT(source) { const checkboxes = document.querySelectorAll('.check-cat'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
     
     function loadAdminHasilCAT() {
       showSpinner(true);
-      google.script.run.withSuccessHandler(res => {
-          showSpinner(false); 
-          globalDataCAT = res.filter(u => u.role !== 'Admin'); 
-          applyFilterCAT(); 
-      }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaUsers();
+      // PERBAIKAN: Memanggil tabel biodata terlebih dahulu untuk cross-check dengan Jadwal Ujian
+      google.script.run.withSuccessHandler(bioRes => {
+          globalAdminData = bioRes; 
+          // Setelah biodata didapat, baru tarik data akun/nilai users
+          google.script.run.withSuccessHandler(userRes => {
+              showSpinner(false); 
+              globalDataCAT = userRes.filter(u => u.role !== 'Admin'); 
+              applyFilterCAT(); 
+          }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaUsers();
+      }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata();
     }
 
     function renderAdminCATTable(data) {
-    const tbody = document.getElementById('tbodyAdminCAT'); 
-    if(data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
-        return;
+        const tbody = document.getElementById('tbodyAdminCAT'); 
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+            return;
+        }
+        let html = ''; 
+        data.forEach(u => {
+            let badge = u.status_lulus_cat === 'LULUS' ? 'bg-success' : (u.status_lulus_cat === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
+            html += `<tr>
+                <td><input type="checkbox" class="form-check-input check-cat" value="${u.nip}"></td>
+                <td>${u.nip}</td><td class="text-start fw-bold">${u.nama}</td>
+                <td>${u.skor_kepribadian || '-'}</td><td>${u.skor_profesional || '-'}</td><td>${u.skor_sosial || '-'}</td>
+                <td class="fw-bold text-primary">${u.skor_total || '-'}</td>
+                <td><span class="badge ${badge} p-2">${u.status_lulus_cat || 'Belum Diset'}</span></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
     }
-    let html = ''; // PERBAIKAN Performa
-    data.forEach(u => {
-        let badge = u.status_lulus_cat === 'LULUS' ? 'bg-success' : (u.status_lulus_cat === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
-        html += `<tr>
-            <td><input type="checkbox" class="form-check-input check-cat" value="${u.nip}"></td>
-            <td>${u.nip}</td><td class="text-start fw-bold">${u.nama}</td>
-            <td>${u.skor_kepribadian || '-'}</td><td>${u.skor_profesional || '-'}</td><td>${u.skor_sosial || '-'}</td>
-            <td class="fw-bold text-primary">${u.skor_total || '-'}</td>
-            <td><span class="badge ${badge} p-2">${u.status_lulus_cat || 'Belum Diset'}</span></td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
-}
     
     function applyFilterCAT() {
         let keyword = document.getElementById('filterCAT').value.toLowerCase();
         let limit = document.getElementById('limitCAT').value;
+        let statusKelulusan = document.getElementById('filterStatusKelulusan').value;
 
         let filtered = globalDataCAT.filter(u => {
-            return (u.nama && u.nama.toLowerCase().includes(keyword)) ||
-                   (u.nip && u.nip.toLowerCase().includes(keyword));
+            // 1. Filter Pencarian Teks
+            let matchText = (u.nama && u.nama.toLowerCase().includes(keyword)) ||
+                            (u.nip && u.nip.toLowerCase().includes(keyword));
+            
+            // 2. PERBAIKAN: Hanya tampilkan jika NIP ada di Jadwal Ujian (Berkas Lengkap & Sudah punya Username CAT)
+            let inJadwal = globalAdminData.some(b => b.NIP === u.nip && b.Status_Verifikasi === 'Berkas Lengkap' && b.Username_CAT && b.Username_CAT.trim() !== '');
+            if (!inJadwal) return false;
+
+            // 3. FITUR BARU: Filter Sudah/Belum Setting Kelulusan
+            let isSet = (u.status_lulus_cat === 'LULUS' || u.status_lulus_cat === 'TIDAK LULUS');
+            let matchStatus = true;
+            
+            if (statusKelulusan === "SUDAH") {
+                matchStatus = isSet;
+            } else if (statusKelulusan === "BELUM") {
+                matchStatus = !isSet;
+            }
+
+            return matchText && matchStatus;
         });
 
+        // 4. Potong data sesuai "Tampilkan X Baris"
         if (limit !== "ALL") {
             filtered = filtered.slice(0, parseInt(limit));
         }
 
         renderAdminCATTable(filtered);
     }
-
     function showModalUploadCAT() { document.getElementById('fileExcelCAT').value = ''; new bootstrap.Modal(document.getElementById('modalUploadCAT')).show(); }
 
     function prosesUploadCAT() {
