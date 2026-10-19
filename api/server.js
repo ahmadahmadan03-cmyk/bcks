@@ -297,6 +297,13 @@ case 'loginUser':
         }
         result = `Jadwal & Akun CAT berhasil disimpan untuk ${nips.length} peserta!`;
         break;
+    
+    case 'updateFileAdmin':
+        let [nipAdmin, fieldName, newUrl] = args;
+        let colName = fieldName.toLowerCase(); // Menyamakan dengan nama kolom database
+        await db.execute({ sql: `UPDATE biodata SET ${colName}=? WHERE nip=?`, args: [newUrl, nipAdmin] });
+        result = "File peserta berhasil diperbarui";
+        break;
 
       case 'uploadSingleFile':
         const fileData = args[0]; 
