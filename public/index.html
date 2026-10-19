@@ -145,7 +145,7 @@
       </div>
     </div>
 
-    <!-- VIEW: ADMIN JADWAL UJIAN -->
+<!-- VIEW: ADMIN JADWAL UJIAN -->
     <div id="admin-jadwal" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <h3 class="mb-3 mb-md-0">Pengaturan Jadwal Ujian & Akun TES</h3>
@@ -155,11 +155,31 @@
         </div>
       </div>
       <div class="alert alert-info small">Centang kotak pada baris peserta lalu klik tombol <b>Atur Jadwal Peserta Terpilih</b> untuk mengatur secara massal.</div>
+
+      <!-- FITUR BARU: Filter Pencarian & Dropdown Status Jadwal -->
+      <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
+         <div class="col-md-5 d-flex align-items-center gap-2 mb-2 mb-md-0">
+             <span class="small fw-bold text-muted text-nowrap">Filter Jadwal:</span>
+             <select id="filterStatusJadwal" class="form-select form-select-sm shadow-sm" onchange="applyFilterAdminJadwal()">
+                 <option value="ALL" selected>Semua Peserta (Berkas Lengkap)</option>
+                 <option value="SUDAH">Sudah Atur Jadwal / Akun</option>
+                 <option value="BELUM">Belum Atur Jadwal / Akun</option>
+             </select>
+         </div>
+         <div class="col-md-7">
+             <div class="input-group input-group-sm shadow-sm">
+                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                 <input type="text" id="filterTextAdminJadwal" class="form-control border-start-0" placeholder="Cari Nama / NIP..." oninput="applyFilterAdminJadwal()">
+             </div>
+         </div>
+      </div>
+
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
         <table class="table table-bordered table-hover">
           <thead class="table-primary">
             <tr>
               <th width="5%" class="text-center"><input type="checkbox" id="chkAll" onclick="toggleAllJadwal(this)"></th>
+              <th width="5%" class="text-center">No</th>
               <th>NIP</th><th>Nama</th><th>Jadwal & Lokasi Ujian</th><th>Akun TES</th><th>Aksi</th>
             </tr>
           </thead>
@@ -974,32 +994,77 @@ function loadAdminPengaturan() {
 
     function toggleAllJadwal(source) { const checkboxes = document.querySelectorAll('.chk-jadwal'); for(let i=0; i<checkboxes.length; i++) { checkboxes[i].checked = source.checked; } }
     
-    function loadAdminJadwal() { 
-    showSpinner(true); 
-    google.script.run.withSuccessHandler(res => { 
-        showSpinner(false); 
-        globalAdminData = res; 
+function loadAdminJadwal() { 
+        showSpinner(true); 
+        google.script.run.withSuccessHandler(res => { 
+            showSpinner(false); 
+            globalAdminData = res; 
+            applyFilterAdminJadwal(); // Panggil filter saat pertama dimuat
+        }).withFailureHandler(err => { 
+            showSpinner(false); Swal.fire('Error', err.message, 'error'); 
+        }).getSemuaBiodata(); 
+    }
+
+    // FUNGSI BARU: Menyaring data berdasarkan pencarian dan status jadwal
+    function applyFilterAdminJadwal() {
+        let keyword = document.getElementById('filterTextAdminJadwal').value.toLowerCase();
+        let statusJadwal = document.getElementById('filterStatusJadwal').value;
+
+        // Hanya tampilkan yang Berkas Lengkap
+        let filtered = globalAdminData.filter(d => d.Status_Verifikasi === 'Berkas Lengkap');
+
+        filtered = filtered.filter(d => {
+            let matchText = (d.Nama && d.Nama.toLowerCase().includes(keyword)) || 
+                            (d.NIP && d.NIP.toLowerCase().includes(keyword));
+            
+            let matchStatus = true;
+            let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); // Cek apakah akun CAT sudah dibuat
+
+            if (statusJadwal === "SUDAH") {
+                matchStatus = isSet;
+            } else if (statusJadwal === "BELUM") {
+                matchStatus = !isSet;
+            }
+
+            return matchText && matchStatus;
+        });
+
+        renderAdminJadwalTable(filtered);
+    }
+
+    // FUNGSI BARU: Menampilkan data ke tabel beserta kolom Nomor Urut
+    function renderAdminJadwalTable(data) {
         const tbody = document.getElementById('tbodyAdminJadwal'); 
-        let html = ''; // PERBAIKAN Performa
-        res.forEach((d, index) => { 
-            if (d.Status_Verifikasi === 'Berkas Lengkap') { 
-                let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; 
-                let wktFormat = formatWaktu24(d.Waktu_Ujian); 
-                let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; 
-                let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); 
-                let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; 
-                let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; 
-                html += `<tr><td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td><td>${d.NIP}</td><td><b>${d.Nama}</b></td><td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'} | <b>Ruangan:</b> ${d.Ruangan_Ujian || '-'}</small></td><td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td><td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwal(${index})">${btnText}</button></td></tr>`; 
-            } 
+        let html = ''; 
+        let no = 1; // Mulai penghitungan nomor urut
+        
+        data.forEach((d) => { 
+            let tgl = d.Tanggal_Ujian ? new Date(d.Tanggal_Ujian).toLocaleDateString('id-ID') : '-'; 
+            let wktFormat = formatWaktu24(d.Waktu_Ujian); 
+            let wktDisplay = wktFormat !== '-' ? wktFormat + ' WIB' : '-'; 
+            let isSet = (d.Username_CAT && d.Username_CAT.trim() !== ''); 
+            let btnClass = isSet ? 'btn-success' : 'btn-warning text-dark'; 
+            let btnText = isSet ? '<i class="fas fa-edit"></i> Edit Jadwal' : '<i class="fas fa-calendar-alt"></i> Atur Jadwal'; 
+            
+            html += `<tr>
+                <td class="text-center"><input type="checkbox" class="chk-jadwal" value="${d.row}"></td>
+                <td class="text-center fw-bold">${no++}</td>
+                <td>${d.NIP}</td>
+                <td><b>${d.Nama}</b></td>
+                <td><small><b>Tgl:</b> ${tgl} | <b>Pukul:</b> ${wktDisplay}</small><br><small><b>Sesi:</b> ${d.Sesi_Ujian || '-'} | <b>Ruangan:</b> ${d.Ruangan_Ujian || '-'}</small></td>
+                <td><small><b>User:</b> ${d.Username_CAT || '-'}<br><b>Pass:</b> ${d.Password_CAT || '-'}</small></td>
+                <td><button class="btn btn-sm ${btnClass}" onclick="bukaJadwalByNIP('${d.NIP}')">${btnText}</button></td>
+            </tr>`; 
         }); 
-        tbody.innerHTML = html || `<tr><td colspan="6" class="text-center text-muted">Belum ada peserta yang berkasnya lengkap.</td></tr>`; 
-    }).withFailureHandler(err => { 
-        showSpinner(false); Swal.fire('Error', err.message, 'error'); 
-    }).getSemuaBiodata(); 
-}
-    
-    function bukaJadwal(index) { 
-        let d = globalAdminData[index]; 
+        
+        tbody.innerHTML = html || `<tr><td colspan="7" class="text-center text-muted">Belum ada peserta yang sesuai kriteria.</td></tr>`; 
+    }
+
+    // PERBAIKAN LOGIKA: Target modal berdasarkan NIP untuk mencegah bug saat data sedang difilter
+    function bukaJadwalByNIP(nip) { 
+        let d = globalAdminData.find(x => x.NIP === nip);
+        if(!d) return Swal.fire('Error', 'Data peserta tidak ditemukan di memori!', 'error');
+
         document.getElementById('jRow').value = JSON.stringify([d.row]); 
         document.getElementById('jNama').innerText = "Peserta: " + d.Nama; 
         document.getElementById('jLokasi').value = d.Lokasi_Ujian || "Diklat Kitri Bhakti Curug, Kabupaten Tangerang"; 
