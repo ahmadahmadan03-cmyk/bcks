@@ -1460,20 +1460,6 @@ function loadAdminJadwal() {
           showSpinner(false); console.error(err); 
        }).getSemuaUsers();
     }
-
-   function renderAdminUsersTable(data) {
-   const tbody = document.getElementById('tbodyUsers'); 
-   if(data.length === 0) {
-       tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
-       return;
-   }
-   let html = ''; // PERBAIKAN Performa
-   data.forEach(u => { 
-       let btnAksi = (u.role === 'Admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
-       html += `<tr><td>${u.role}</td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
-   });
-   tbody.innerHTML = html;
-}
     
     function applyFilterUsers() {
         let keyword = document.getElementById('filterUsers').value.toLowerCase();
@@ -1491,9 +1477,6 @@ function loadAdminJadwal() {
         renderAdminUsersTable(filtered);
     }
 
-    function showModalUser() { document.getElementById('modalUserTitle').innerText = 'Tambah User'; document.getElementById('uRow').value = ''; document.getElementById('uNIP').value = ''; document.getElementById('uNIK').value = ''; document.getElementById('uNama').value = ''; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
-    function editUser(row, nip, nik, nama) { document.getElementById('modalUserTitle').innerText = 'Edit User'; document.getElementById('uRow').value = row; document.getElementById('uNIP').value = nip; document.getElementById('uNIK').value = nik; document.getElementById('uNama').value = nama; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
-    function simpanUser() { let row = document.getElementById('uRow').value; let nip = document.getElementById('uNIP').value; let nik = document.getElementById('uNIK').value; let nama = document.getElementById('uNama').value; if(!nip || !nik || !nama) return Swal.fire('Peringatan', 'Lengkapi seluruh data!', 'warning'); bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); showSpinner(true); if(row) { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).editUserDB(row, nip, nik, nama); } else { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).addUserDB(nip, nik, nama); } }
     function hapusUser(row) { Swal.fire({ title: 'Yakin menghapus user ini?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Ya!' }).then((result) => { if (result.isConfirmed) { showSpinner(true); google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Terhapus!', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).deleteUserDB(row); } }); }
     function downloadTemplateUser() { var wb = XLSX.utils.book_new(); var ws_data = [["NIP", "NIK", "Nama Lengkap"], ["1985010101", "3501234567", "Nama Contoh Satu"]]; var ws = XLSX.utils.aoa_to_sheet(ws_data); XLSX.utils.book_append_sheet(wb, ws, "TemplateUser"); XLSX.writeFile(wb, "Template_Upload_User_BCKS.xlsx"); }
     function showModalUploadUser() { document.getElementById('fileExcelUser').value = ''; new bootstrap.Modal(document.getElementById('modalUploadUser')).show(); }
@@ -1620,6 +1603,150 @@ function loadAdminJadwal() {
            globalBukaPengumumanCAT = val; 
            Swal.fire('Berhasil', res, 'success'); 
        }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); cb.checked = !cb.checked; }).togglePengumumanCAT(val);
+    }
+    // ================= FUNGSI ADMIN USERS (UPDATE ROLE) =================
+    function renderAdminUsersTable(data) {
+        const tbody = document.getElementById('tbodyUsers'); 
+        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
+        let html = ''; 
+        data.forEach(u => { 
+            let btnAksi = (u.role === 'Admin' && u.nip === 'admin') ? '' : `<button class="btn btn-sm btn-warning" onclick="editUser('${u.row}','${u.nip}','${u.nik}','${u.nama}','${u.role}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="hapusUser('${u.row}')"><i class="fas fa-trash"></i></button>`; 
+            html += `<tr><td><span class="badge bg-${u.role === 'Penguji' ? 'info' : (u.role === 'Admin' ? 'danger' : 'secondary')}">${u.role}</span></td><td>${u.nip}</td><td>${u.nik}</td><td>${u.nama}</td><td>${btnAksi}</td></tr>`; 
+        });
+        tbody.innerHTML = html;
+    }
+
+    function showModalUser() { document.getElementById('modalUserTitle').innerText = 'Tambah User'; document.getElementById('uRow').value = ''; document.getElementById('uNIP').value = ''; document.getElementById('uNIK').value = ''; document.getElementById('uNama').value = ''; document.getElementById('uRole').value = 'Pegawai'; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
+    function editUser(row, nip, nik, nama, role) { document.getElementById('modalUserTitle').innerText = 'Edit User'; document.getElementById('uRow').value = row; document.getElementById('uNIP').value = nip; document.getElementById('uNIK').value = nik; document.getElementById('uNama').value = nama; document.getElementById('uRole').value = role || 'Pegawai'; new bootstrap.Modal(document.getElementById('modalUser')).show(); }
+    function simpanUser() { let row = document.getElementById('uRow').value; let nip = document.getElementById('uNIP').value; let nik = document.getElementById('uNIK').value; let nama = document.getElementById('uNama').value; let role = document.getElementById('uRole').value; if(!nip || !nik || !nama) return Swal.fire('Peringatan', 'Lengkapi seluruh data!', 'warning'); bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); showSpinner(true); if(row) { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).editUserDB(row, nip, nik, nama, role); } else { google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadUsers(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).addUserDB(nip, nik, nama, role); } }
+
+
+    // ================= FUNGSI UPDATE PESAN KELULUSAN PESERTA (TANPA TABEL) =================
+    function loadPegawaiHasilCAT() {
+       const nip = localStorage.getItem('nip');
+       showSpinner(true);
+       if(globalBukaPengumumanCAT !== "true") { showSpinner(false); document.getElementById('catTerkunciArea').classList.remove('d-none'); document.getElementById('catTerbukaArea').classList.add('d-none'); return; }
+
+       google.script.run.withSuccessHandler(res => {
+          showSpinner(false);
+          document.getElementById('catTerkunciArea').classList.add('d-none');
+          document.getElementById('catTerbukaArea').classList.remove('d-none');
+          const msgArea = document.getElementById('cat-status-banner');
+          
+          if(res && res.status_lulus_cat === 'LULUS') {
+              // PERBAIKAN: Menghilangkan nilai CAT dan langsung fokus ke download kartu
+              msgArea.innerHTML = `
+              <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
+                  <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                  <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS TEST</h4>
+                  <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+                  <div class="text-muted fw-bold mb-3 border-top pt-3">Silahkan unduh Kartu Ujian Test Wawancara Anda di bawah ini:</div>
+                  <button class="btn btn-warning shadow-lg fw-bold btn-lg w-100 py-3" style="max-width: 400px;" onclick="unduhKartuWawancara()"><i class="fas fa-file-pdf fs-5"></i> Unduh Kartu Wawancara</button>
+              </div>`;
+
+              // MENGISI DATA KE KARTU WAWANCARA TERSEMBUNYI (Tetap sama seperti sebelumnya)
+              if (res.foto && res.foto !== "") { document.getElementById('kw_foto').src = res.foto; document.getElementById('kw_foto').style.display = 'block'; document.getElementById('kw_foto_text').style.display = 'none'; } 
+              else { document.getElementById('kw_foto').style.display = 'none'; document.getElementById('kw_foto_text').style.display = 'block'; }
+              document.getElementById('kw_nama').innerText = res.bio_nama || res.nama; 
+              document.getElementById('kw_jenjang').innerText = res.jenjang || '-'; 
+              document.getElementById('kw_nik').innerText = res.bio_nik || '-';
+              let formatTglLahir = res.tanggal_lahir ? new Date(res.tanggal_lahir).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+              document.getElementById('kw_ttl').innerText = (res.tempat_lahir || '-') + ", " + (formatTglLahir !== 'Invalid Date' ? formatTglLahir : '-'); 
+              document.getElementById('kw_jk').innerText = res.jenis_kelamin || '-';
+              let tglUjianFormat = res.tanggal_wawancara ? new Date(res.tanggal_wawancara).toLocaleDateString('id-ID', { weekday:'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+              document.getElementById('kw_tgl').innerText = tglUjianFormat;
+              let wktFormat = formatWaktu24(res.waktu_wawancara); document.getElementById('kw_waktu').innerText = wktFormat !== '-' ? wktFormat + ' WIB' : '-';
+              document.getElementById('kw_ruang').innerText = res.ruang_wawancara || '-';
+              document.getElementById('kw_penguji').innerText = res.penguji_wawancara || '-';
+              const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+              document.getElementById('kw_tgl_cetak').innerText = new Date().toLocaleDateString('id-ID', dateOptions);
+
+          } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
+              msgArea.innerHTML = `<div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red"><i class="fas fa-times-circle fa-4x text-danger mb-3"></i><h4 class="fw-bold text-danger mb-2">MOHON MAAF, ANDA DINYATAKAN TIDAK LOLOS</h4><div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div></div>`;
+          } else {
+              msgArea.innerHTML = `<div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center"><i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i><h5 class="fw-bold text-secondary mb-0">STATUS KELULUSAN ANDA BELUM TERSEDIA</h5></div>`;
+          }
+       }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getHasilCATPegawai(nip);
+    }
+
+
+    // ================= FUNGSI BARU: MENU HASIL WAWANCARA (ADMIN/PENGUJI) =================
+    function loadAdminWawancara() {
+        showSpinner(true);
+        google.script.run.withSuccessHandler(bioRes => {
+            globalAdminData = bioRes; 
+            google.script.run.withSuccessHandler(userRes => {
+                showSpinner(false); 
+                // Hanya tampilkan peserta yang LULUS CAT
+                globalDataCAT = userRes.filter(u => u.role !== 'Admin' && u.role !== 'Penguji' && u.status_lulus_cat === 'LULUS'); 
+                applyFilterWawancara(); 
+            }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaUsers();
+        }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getSemuaBiodata();
+    }
+
+    function applyFilterWawancara() {
+        let keyword = document.getElementById('filterWawancara').value.toLowerCase();
+        let limit = document.getElementById('limitWawancara').value;
+        let filtered = globalDataCAT.filter(u => (u.nama && u.nama.toLowerCase().includes(keyword)) || (u.nip && u.nip.toLowerCase().includes(keyword)));
+        if (limit !== "ALL") filtered = filtered.slice(0, parseInt(limit));
+        renderWawancaraTable(filtered);
+    }
+
+    function renderWawancaraTable(data) {
+        const tbody = document.getElementById('tbodyWawancara');
+        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
+        let html = ''; let no = 1;
+        data.forEach(u => {
+            let b = globalAdminData.find(x => x.NIP === u.nip) || {};
+            let badge = u.status_wawancara === 'LULUS' ? 'bg-success' : (u.status_wawancara === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
+            html += `<tr>
+                <td>${no++}</td>
+                <td>${u.nip}</td>
+                <td class="text-start fw-bold">${u.nama}</td>
+                <td><small>Penguji: <b>${b.penguji_wawancara || '-'}</b><br>Ruang: ${b.ruang_wawancara || '-'}</small></td>
+                <td class="fw-bold text-primary fs-5">${u.skor_wawancara || '-'}</td>
+                <td><span class="badge ${badge} p-2">${u.status_wawancara || 'Belum Dinilai'}</span></td>
+                <td><button class="btn btn-sm btn-primary shadow-sm" onclick="bukaInputWawancara('${u.nip}', '${u.nama}', '${u.skor_wawancara || ''}', '${u.status_wawancara || ''}')"><i class="fas fa-edit"></i> Input</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+    
+    function bukaInputWawancara(nip, nama, skor, status) {
+        document.getElementById('wNIP').value = nip;
+        document.getElementById('wNama').value = nama;
+        document.getElementById('wSkor').value = skor;
+        document.getElementById('wStatus').value = status || 'BELUM DISET';
+        new bootstrap.Modal(document.getElementById('modalInputWawancara')).show();
+    }
+
+    function simpanNilaiWawancara() {
+        let nip = document.getElementById('wNIP').value; let skor = document.getElementById('wSkor').value; let status = document.getElementById('wStatus').value;
+        let btn = document.querySelector("#modalInputWawancara .btn-primary"); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+        google.script.run.withSuccessHandler(res => {
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false;
+            bootstrap.Modal.getInstance(document.getElementById('modalInputWawancara')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara();
+        }).withFailureHandler(err => {
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false; Swal.fire('Error', err.message, 'error');
+        }).saveNilaiWawancara(nip, skor, status);
+    }
+    
+    function showModalUploadWawancara() { document.getElementById('fileExcelWawancara').value = ''; new bootstrap.Modal(document.getElementById('modalUploadWawancara')).show(); }
+
+    function prosesUploadWawancara() {
+      let fileInput = document.getElementById('fileExcelWawancara'); if(fileInput.files.length === 0) return Swal.fire('Peringatan', 'Pilih file Excel terlebih dahulu!', 'warning');
+      let file = fileInput.files[0]; let reader = new FileReader();
+      reader.onload = function(e) { 
+          let workbook = XLSX.read(e.target.result, {type: 'binary'}); let excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); if(excelRows.length > 0) excelRows.shift(); 
+          let dataToUpload = [];
+          for(let row of excelRows) {
+              if(row && row.length >= 1 && row[0]) {
+                  dataToUpload.push([ String(row[0]).trim(), row[1] ? String(row[1]).trim() : '', row[2] ? String(row[2]).trim() : '' ]);
+              }
+          }
+          bootstrap.Modal.getInstance(document.getElementById('modalUploadWawancara')).hide(); showSpinner(true); 
+          google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).uploadExcelNilaiWawancara(dataToUpload); 
+      }; reader.readAsBinaryString(file);
     }
 
     // ================= FUNGSI PEGAWAI BIODATA & VERIFIKASI =================
@@ -1869,82 +1996,7 @@ async function submitBiodata() {
             Swal.fire('Gagal Menyimpan', err.message, 'error'); 
         }).saveJadwalWawancaraMassal(nips, dataJadwal); 
     }
-    // Fungsi Pegawai Menampilkan Dashboard & Tombol Cetak
-    function loadPegawaiHasilCAT() {
-       const nip = localStorage.getItem('nip');
-       showSpinner(true);
-       
-       if(globalBukaPengumumanCAT !== "true") {
-           showSpinner(false);
-           document.getElementById('catTerkunciArea').classList.remove('d-none');
-           document.getElementById('catTerbukaArea').classList.add('d-none');
-           return;
-       }
-
-       google.script.run.withSuccessHandler(res => {
-          showSpinner(false);
-          document.getElementById('catTerkunciArea').classList.add('d-none');
-          document.getElementById('catTerbukaArea').classList.remove('d-none');
-
-          const msgArea = document.getElementById('cat-status-banner');
-          
-          if(res && res.status_lulus_cat === 'LULUS') {
-              msgArea.innerHTML = `
-              <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
-                  <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-                  <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS</h4>
-                  <div class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  <div class="text-muted mb-3">Selanjutnya silahkan buka ruang GTK masing - masing untuk upload dokumen</div>
-                  <button class="btn btn-warning mt-3 shadow-sm fw-bold btn-lg" onclick="unduhKartuWawancara()"><i class="fas fa-file-pdf"></i> Unduh Kartu Peserta Tes Wawancara</button>
-              </div>`;
-
-              // MENGISI DATA KE KARTU WAWANCARA TERSEMBUNYI
-              if (res.foto && res.foto !== "") { document.getElementById('kw_foto').src = res.foto; document.getElementById('kw_foto').style.display = 'block'; document.getElementById('kw_foto_text').style.display = 'none'; } 
-              else { document.getElementById('kw_foto').style.display = 'none'; document.getElementById('kw_foto_text').style.display = 'block'; }
-              
-              document.getElementById('kw_nama').innerText = res.bio_nama || res.nama; 
-              document.getElementById('kw_jenjang').innerText = res.jenjang || '-'; 
-              document.getElementById('kw_nik').innerText = res.bio_nik || '-';
-              
-              let formatTglLahir = res.tanggal_lahir ? new Date(res.tanggal_lahir).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-              document.getElementById('kw_ttl').innerText = (res.tempat_lahir || '-') + ", " + (formatTglLahir !== 'Invalid Date' ? formatTglLahir : '-'); 
-              document.getElementById('kw_jk').innerText = res.jenis_kelamin || '-';
-              
-              let tglUjianFormat = res.tanggal_wawancara ? new Date(res.tanggal_wawancara).toLocaleDateString('id-ID', { weekday:'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-              document.getElementById('kw_tgl').innerText = tglUjianFormat;
-              let wktFormat = formatWaktu24(res.waktu_wawancara); 
-              document.getElementById('kw_waktu').innerText = wktFormat !== '-' ? wktFormat + ' WIB' : '-';
-              document.getElementById('kw_ruang').innerText = res.ruang_wawancara || '-';
-              
-              // TAMBAHAN MENAMPILKAN PENGUJI DI KARTU
-              document.getElementById('kw_penguji').innerText = res.penguji_wawancara || '-';
-              
-              const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-              document.getElementById('kw_tgl_cetak').innerText = new Date().toLocaleDateString('id-ID', dateOptions);
-     
-          } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
-              msgArea.innerHTML = `
-              <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
-                  <i class="fas fa-times-circle fa-4x text-danger mb-3"></i>
-                  <h4 class="fw-bold text-danger mb-2">MOHON MAAF, ANDA DINYATAKAN TIDAK LOLOS</h4>
-                  <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-              </div>`;
-          } else {
-              msgArea.innerHTML = `
-              <div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center">
-                  <i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i>
-                  <h5 class="fw-bold text-secondary mb-0">NILAI DAN STATUS KELULUSAN ANDA BELUM TERSEDIA</h5>
-              </div>`;
-          }
-
-          document.getElementById('skor1').innerText = (res && res.skor_kepribadian) ? res.skor_kepribadian : '';
-          document.getElementById('skor2').innerText = (res && res.skor_profesional) ? res.skor_profesional : '';
-          document.getElementById('skor3').innerText = (res && res.skor_sosial) ? res.skor_sosial : '';
-          document.getElementById('skorTot').innerText = (res && res.skor_total) ? res.skor_total : '';
-
-       }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getHasilCATPegawai(nip);
-    }
-
+   
     // Fungsi Cetak Kartu Wawancara Ke PDF
     function unduhKartuWawancara() {
       document.getElementById('areaCetakWawancara').classList.remove('d-none'); // Tampilkan sesaat untuk render
