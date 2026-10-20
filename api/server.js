@@ -58,6 +58,7 @@ export default async function handler(req, res) {
     try { await db.execute("ALTER TABLE users ADD COLUMN status_lulus_cat TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE biodata ADD COLUMN penguji_wawancara TEXT"); } catch(e){}
 
     // =====================================================================
     // PERBAIKAN: Middleware Pengecekan Akses Global Khusus Endpoint Peserta
@@ -271,7 +272,7 @@ case 'loginUser':
 
         case 'getHasilCATPegawai':
         const sqlJoin = `SELECT u.*, b.nama as bio_nama, b.jenjang, b.nik as bio_nik, b.tempat_lahir, b.tanggal_lahir, 
-                         b.jenis_kelamin, b.foto, b.tanggal_wawancara, b.waktu_wawancara, b.ruang_wawancara 
+                         b.jenis_kelamin, b.foto, b.tanggal_wawancara, b.waktu_wawancara, b.ruang_wawancara, b.penguji_wawancara 
                          FROM users u LEFT JOIN biodata b ON u.nip = b.nip WHERE u.nip=?`;
         const rCAT = await db.execute({ sql: sqlJoin, args: [args[0]] });
         if(rCAT.rows.length > 0) result = rCAT.rows[0];
@@ -283,8 +284,8 @@ case 'loginUser':
         let nipsWw = args[0]; let jdWw = args[1];
         for(let n of nipsWw) {
            await db.execute({ 
-               sql: "UPDATE biodata SET tanggal_wawancara=?, waktu_wawancara=?, ruang_wawancara=? WHERE nip=?", 
-               args: [jdWw.Tanggal_Wawancara, jdWw.Waktu_Wawancara, jdWw.Ruang_Wawancara, n] 
+               sql: "UPDATE biodata SET tanggal_wawancara=?, waktu_wawancara=?, ruang_wawancara=?, penguji_wawancara=? WHERE nip=?", 
+               args: [jdWw.Tanggal_Wawancara, jdWw.Waktu_Wawancara, jdWw.Ruang_Wawancara, jdWw.Penguji_Wawancara, n] 
            });
         }
         result = `Jadwal Wawancara berhasil disimpan untuk ${nipsWw.length} peserta!`;
