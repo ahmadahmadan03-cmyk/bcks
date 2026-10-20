@@ -59,6 +59,8 @@ export default async function handler(req, res) {
     try { await db.execute("ALTER TABLE biodata ADD COLUMN manajerial TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN ruangan_ujian TEXT"); } catch(e){}
     try { await db.execute("ALTER TABLE biodata ADD COLUMN penguji_wawancara TEXT"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN skor_wawancara TEXT"); } catch(e){}
+    try { await db.execute("ALTER TABLE users ADD COLUMN status_wawancara TEXT"); } catch(e){}
 
     // =====================================================================
     // PERBAIKAN: Middleware Pengecekan Akses Global Khusus Endpoint Peserta
