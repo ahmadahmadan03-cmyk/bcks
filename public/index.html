@@ -240,11 +240,15 @@
         </div>
       </div>
       
+<!-- VIEW: ADMIN HASIL CAT -->
       <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
          <div class="col-md-9 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
              <button class="btn btn-primary btn-sm shadow-sm" onclick="setLulusMassalCAT('LULUS')"><i class="fas fa-check"></i> Lulus Terpilih</button>
              <button class="btn btn-danger btn-sm shadow-sm" onclick="setLulusMassalCAT('TIDAK LULUS')"><i class="fas fa-times"></i> Tidak Lulus Terpilih</button>
              
+             <!-- FITUR BARU: Tombol Atur Jadwal Wawancara -->
+             <button class="btn btn-warning btn-sm shadow-sm ms-2 fw-bold" onclick="bukaJadwalWawancaraMassal()"><i class="fas fa-calendar-alt"></i> Atur Jadwal Wawancara</button>
+
              <!-- FITUR BARU: Filter Status Kelulusan -->
              <span class="small fw-bold text-muted ms-md-2 text-nowrap border-start ps-3">Status:</span>
              <select id="filterStatusKelulusan" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterCAT()">
@@ -566,7 +570,86 @@
       </div>
     </div>
   </div>
+<!-- Modal Admin Atur Jadwal Wawancara -->
+  <div class="modal fade" id="modalJadwalWawancara" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark"><h5 class="modal-title">Atur Jadwal Tes Wawancara</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="jwRow">
+          <div class="alert alert-info py-2" id="jwNama" style="font-weight:bold; font-size:0.9rem;"></div>
+          <div class="row">
+            <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Tanggal Ujian (Wawancara)</label><input type="date" id="jwTanggal" class="form-control"></div>
+            <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Waktu Ujian</label><input type="time" id="jwWaktu" class="form-control"></div>
+            <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Ruang</label><input type="text" id="jwRuangan" class="form-control" placeholder="Contoh: Ruang Wawancara 1"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary w-100" onclick="simpanJadwalWawancara()">Simpan Jadwal Wawancara</button></div>
+      </div>
+    </div>
+  </div>
 
+  <!-- AREA CETAK KARTU WAWANCARA (Tersembunyi, hanya untuk diekspor ke PDF) -->
+  <div id="areaCetakWawancara" class="d-none">
+      <div id="kartuPesertaWawancara" style="width: 100%; max-width: 190mm; padding: 30px 40px; background: #fff; color: #000; font-family: 'Times New Roman', Times, serif; position: relative; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); margin: 0 auto; display: block;">
+          <div class="k-header">
+              <img src="https://lh3.googleusercontent.com/d/1IWNmSpAZfMOYOU0uNK2RIiD83Zr63ye9" alt="Logo" crossorigin="anonymous">
+              <div>
+                  <h4 style="margin: 0; font-weight: bold; text-transform: uppercase;">Kartu Peserta Tes Wawancara</h4>
+                  <h5 style="margin: 5px 0 0 0; font-weight: bold;">Bakal Calon Kepala Sekolah Non Reguler</h5>
+                  <h5 style="margin: 5px 0 0 0; font-weight: bold;">Dinas Pendidikan Kabupaten Tangerang</h5>
+              </div>
+          </div>
+          <div style="display: flex; align-items: flex-start; gap: 20px;">
+              <div style="width: 3cm; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+                  <div class="k-photo-box"><img id="kw_foto" src="" crossorigin="anonymous" alt="Pas Foto"><span id="kw_foto_text">Pas Photo<br>3x4</span></div>
+              </div>
+              <div style="flex: 1;">
+                  <table class="k-table">
+                      <tr><td style="width: 32%; font-weight: bold;">Nama</td><td colspan="2">: <span id="kw_nama"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Jenjang</td><td colspan="2">: <span id="kw_jenjang"></span></td></tr>
+                      <tr><td style="font-weight: bold;">NIK</td><td colspan="2">: <span id="kw_nik"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Tempat, Tanggal Lahir</td><td colspan="2">: <span id="kw_ttl"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Jenis Kelamin</td><td colspan="2">: <span id="kw_jk"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Lokasi Ujian</td><td colspan="2">: <span style="color: blue; text-decoration: underline;">Diklat Kitri Bhakti Curug, Kabupaten Tangerang</span></td></tr>
+                      <tr><td style="font-weight: bold;">Tanggal Ujian</td><td colspan="2">: <span id="kw_tgl"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Waktu Ujian</td><td colspan="2">: <span id="kw_waktu"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Ruang</td><td colspan="2">: <span id="kw_ruang"></span></td></tr>
+                  </table>
+              </div>
+          </div>
+          <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="width: 50%;">
+                  <b style="font-size: 11.5pt;">Perhatian:</b>
+                  <ol style="margin-top: 5px; font-size: 10.5pt; line-height: 1.4; padding-left: 25px;">
+                      <li>Peserta WAJIB Datang 90 Menit Sebelum Waktu Ujian</li>
+                      <li>Kartu Peserta Ujian Ini Wajib Dibawa Saat Pelaksanaan Ujian</li>
+                      <li>Peserta wajib membawa Kartu / Bukti Identitas Diri (Asli) yang sesuai dengan Kartu Peserta Ujian</li>
+                      <li>Peserta wajib mengenakan kemeja putih, celana panjang hitam untuk laki-laki, rok atau celana panjang hitam untuk perempuan.</li>
+                  </ol>
+              </div>
+              <div style="width: 45%; text-align: left; font-size: 11pt; line-height: 1.3;">
+                  <div>Tangerang, <span id="kw_tgl_cetak"></span></div>
+                  <div>Kepala Dinas Pendidikan</div>
+                  <div>Kabupaten Tangerang</div>
+                  <div style="margin: 10px 0;">
+                      <img src="https://quickchart.io/qr?text=TTE+KADISDIK+TANGERANG&centerImageUrl=https%3A%2F%2Flh3.googleusercontent.com%2Fd%2F1IWNmSpAZfMOYOU0uNK2RIiD83Zr63ye9&size=90&margin=0" alt="QR Code" style="width: 90px; height: 90px;">
+                  </div>
+                  <div><u>SUPRIYADI, S.STP., M.IP</u></div>
+                  <div>NIP. 197802081996121001</div>
+              </div>
+          </div>
+          <div style="margin-top: 15px; display: flex; align-items: center;">
+              <div style="width: 35px; height: 35px; border-radius: 50%; background-color: #2b78e4; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                 <i class="fas fa-key" style="color: white; font-size: 16px; transform: rotate(135deg);"></i>
+              </div>
+              <div style="line-height: 1.2; font-size: 10pt; font-family: Arial, sans-serif;">
+                  <span style="border-bottom: 1px dotted #000;">Dokumen ini ditandatangani secara elektronik</span><br>
+                  <span style="border-bottom: 1px dotted #000;">Menggunakan Sertifikat Elektronik BSrE – BSSN</span>
+              </div>
+          </div>
+      </div>
+  </div>
   <!-- Modal Tambah/Edit User -->
   <div class="modal fade" id="modalUser" tabindex="-1">
     <div class="modal-dialog">
@@ -1650,7 +1733,47 @@ async function submitBiodata() {
     const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
 
 
-    // ================= FUNGSI Load Hasil CAT Peserta =================
+// ================= FUNGSI Load Hasil CAT Peserta & Jadwal Wawancara =================
+    
+    // Fungsi Khusus Admin untuk Mengatur Wawancara
+    function bukaJadwalWawancaraMassal() { 
+        let checked = document.querySelectorAll('.check-cat:checked'); 
+        if(checked.length === 0) return Swal.fire('Peringatan', 'Centang minimal satu peserta pada tabel!', 'warning'); 
+        
+        let nipsArray = []; 
+        checked.forEach(chk => nipsArray.push(chk.value)); 
+        
+        document.getElementById('jwRow').value = JSON.stringify(nipsArray); 
+        document.getElementById('jwNama').innerText = checked.length + " Peserta Terpilih"; 
+        document.getElementById('jwTanggal').value = ""; 
+        document.getElementById('jwWaktu').value = ""; 
+        document.getElementById('jwRuangan').value = ""; 
+        new bootstrap.Modal(document.getElementById('modalJadwalWawancara')).show(); 
+    }    
+
+    function simpanJadwalWawancara() { 
+        let nips = JSON.parse(document.getElementById('jwRow').value); 
+        let dataJadwal = { 
+            Tanggal_Wawancara: document.getElementById('jwTanggal').value, 
+            Waktu_Wawancara: document.getElementById('jwWaktu').value, 
+            Ruang_Wawancara: document.getElementById('jwRuangan').value 
+        }; 
+        let btn = document.querySelector("#modalJadwalWawancara .btn-primary"); 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; 
+        
+        google.script.run.withSuccessHandler(res => { 
+            btn.innerHTML = 'Simpan Jadwal Wawancara'; btn.disabled = false; 
+            bootstrap.Modal.getInstance(document.getElementById('modalJadwalWawancara')).hide(); 
+            Swal.fire('Berhasil', res, 'success'); 
+            let checkboxes = document.querySelectorAll('.check-cat');
+            checkboxes.forEach(c => c.checked = false); // Reset checklist
+        }).withFailureHandler(err => { 
+            btn.innerHTML = 'Simpan Jadwal Wawancara'; btn.disabled = false; 
+            Swal.fire('Gagal Menyimpan', err.message, 'error'); 
+        }).saveJadwalWawancaraMassal(nips, dataJadwal); 
+    }
+
+    // Fungsi Pegawai Menampilkan Dashboard & Tombol Cetak
     function loadPegawaiHasilCAT() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -1675,8 +1798,31 @@ async function submitBiodata() {
                   <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
                   <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS</h4>
                   <div class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  <div class="text-muted">Selanjutnya silahkan buka ruang GTK masing - masing untuk upload dokumen</div>
+                  <div class="text-muted mb-3">Selanjutnya silahkan buka ruang GTK masing - masing untuk upload dokumen</div>
+                  <button class="btn btn-warning mt-3 shadow-sm fw-bold btn-lg" onclick="unduhKartuWawancara()"><i class="fas fa-file-pdf"></i> Unduh Kartu Peserta Tes Wawancara</button>
               </div>`;
+
+              // MENGISI DATA KE KARTU WAWANCARA TERSEMBUNYI
+              if (res.foto && res.foto !== "") { document.getElementById('kw_foto').src = res.foto; document.getElementById('kw_foto').style.display = 'block'; document.getElementById('kw_foto_text').style.display = 'none'; } 
+              else { document.getElementById('kw_foto').style.display = 'none'; document.getElementById('kw_foto_text').style.display = 'block'; }
+              
+              document.getElementById('kw_nama').innerText = res.bio_nama || res.nama; 
+              document.getElementById('kw_jenjang').innerText = res.jenjang || '-'; 
+              document.getElementById('kw_nik').innerText = res.bio_nik || '-';
+              
+              let formatTglLahir = res.tanggal_lahir ? new Date(res.tanggal_lahir).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+              document.getElementById('kw_ttl').innerText = (res.tempat_lahir || '-') + ", " + (formatTglLahir !== 'Invalid Date' ? formatTglLahir : '-'); 
+              document.getElementById('kw_jk').innerText = res.jenis_kelamin || '-';
+              
+              let tglUjianFormat = res.tanggal_wawancara ? new Date(res.tanggal_wawancara).toLocaleDateString('id-ID', { weekday:'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+              document.getElementById('kw_tgl').innerText = tglUjianFormat;
+              let wktFormat = formatWaktu24(res.waktu_wawancara); 
+              document.getElementById('kw_waktu').innerText = wktFormat !== '-' ? wktFormat + ' WIB' : '-';
+              document.getElementById('kw_ruang').innerText = res.ruang_wawancara || '-';
+              
+              const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+              document.getElementById('kw_tgl_cetak').innerText = new Date().toLocaleDateString('id-ID', dateOptions);
+
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
               msgArea.innerHTML = `
               <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
@@ -1698,6 +1844,23 @@ async function submitBiodata() {
           document.getElementById('skorTot').innerText = (res && res.skor_total) ? res.skor_total : '';
 
        }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getHasilCATPegawai(nip);
+    }
+
+    // Fungsi Cetak Kartu Wawancara Ke PDF
+    function unduhKartuWawancara() {
+      document.getElementById('areaCetakWawancara').classList.remove('d-none'); // Tampilkan sesaat untuk render
+      const el = document.getElementById('kartuPesertaWawancara');
+      var opt = { 
+          margin: [0.2, 0.3, 0.2, 0.3], 
+          filename: 'Kartu_Wawancara_BCKS_'+localStorage.getItem('nip')+'.pdf', 
+          image: { type: 'jpeg', quality: 1 }, 
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true }, 
+          jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } 
+      };
+      
+      html2pdf().set(opt).from(el).save().then(() => {
+          document.getElementById('areaCetakWawancara').classList.add('d-none'); // Sembunyikan lagi
+      });
     }
 
     function unduhKartu() {
