@@ -269,10 +269,25 @@ case 'loginUser':
         result = isSingle ? (parsedData[0] || null) : parsedData;
         break;
 
-      case 'getHasilCATPegawai':
-        const rCAT = await db.execute({ sql: "SELECT * FROM users WHERE nip=?", args: [args[0]] });
+        case 'getHasilCATPegawai':
+        const sqlJoin = `SELECT u.*, b.nama as bio_nama, b.jenjang, b.nik as bio_nik, b.tempat_lahir, b.tanggal_lahir, 
+                         b.jenis_kelamin, b.foto, b.tanggal_wawancara, b.waktu_wawancara, b.ruang_wawancara 
+                         FROM users u LEFT JOIN biodata b ON u.nip = b.nip WHERE u.nip=?`;
+        const rCAT = await db.execute({ sql: sqlJoin, args: [args[0]] });
         if(rCAT.rows.length > 0) result = rCAT.rows[0];
         else result = null;
+        break;
+
+      // PERBAIKAN 3: Aksi Baru Menyimpan Jadwal Wawancara
+      case 'saveJadwalWawancaraMassal':
+        let nipsWw = args[0]; let jdWw = args[1];
+        for(let n of nipsWw) {
+           await db.execute({ 
+               sql: "UPDATE biodata SET tanggal_wawancara=?, waktu_wawancara=?, ruang_wawancara=? WHERE nip=?", 
+               args: [jdWw.Tanggal_Wawancara, jdWw.Waktu_Wawancara, jdWw.Ruang_Wawancara, n] 
+           });
+        }
+        result = `Jadwal Wawancara berhasil disimpan untuk ${nipsWw.length} peserta!`;
         break;
 
       case 'verifyBerkas':
