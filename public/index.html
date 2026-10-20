@@ -285,6 +285,39 @@
         </table>
       </div>
     </div>
+    <!-- VIEW: ADMIN/PENGUJI HASIL WAWANCARA -->
+    <div id="admin-wawancara" class="view-section">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+        <h3 class="mb-3 mb-md-0">Penilaian Hasil Wawancara</h3>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold shadow-sm" onclick="showModalUploadWawancara()"><i class="fas fa-file-excel"></i> Upload Nilai (Excel)</button>
+        </div>
+      </div>
+      <div class="row mb-3 align-items-center bg-white p-2 rounded shadow-sm mx-0 border">
+         <div class="col-md-6 d-flex align-items-center gap-2 mb-2 mb-md-0 flex-wrap">
+             <span class="small fw-bold text-muted text-nowrap">Tampilkan:</span>
+             <select id="limitWawancara" class="form-select form-select-sm w-auto shadow-sm" onchange="applyFilterWawancara()">
+                 <option value="10">10 Baris</option>
+                 <option value="50">50 Baris</option>
+                 <option value="ALL" selected>Semua</option>
+             </select>
+         </div>
+         <div class="col-md-6">
+             <div class="input-group input-group-sm shadow-sm">
+                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                 <input type="text" id="filterWawancara" class="form-control border-start-0" placeholder="Cari Nama/NIP Peserta..." oninput="applyFilterWawancara()">
+             </div>
+         </div>
+      </div>
+      <div class="table-responsive bg-white p-3 shadow-sm rounded">
+        <table class="table table-bordered table-hover text-center align-middle" style="font-size: 0.9rem;">
+          <thead class="table-primary">
+            <tr><th>No</th><th>NIP</th><th class="text-start">Nama</th><th>Ruang & Penguji</th><th>Nilai Wawancara</th><th>Status</th><th>Aksi</th></tr>
+          </thead>
+          <tbody id="tbodyWawancara"></tbody>
+        </table>
+      </div>
+    </div>
 
  <!-- VIEW: ADMIN PENGATURAN -->
     <div id="admin-pengaturan" class="view-section">
@@ -500,7 +533,11 @@
       <div id="catTerbukaArea" class="hidden pt-2 pb-5 text-center">
          <h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL SELEKSI TES BERBASIS KOMPUTER</h5>
          <div id="cat-status-banner" class="mb-5"></div>
-         
+                  <!-- TAMBAHAN: Beri ID tabelSkorCAT pada kartu ini -->
+         <div id="tabelSkorCAT" class="card border border-dark rounded-0 mx-auto d-none" style="max-width: 650px;">
+           <div class="card-body p-0">
+             <table class="table table-bordered border-dark mb-0 align-middle">
+
          <div class="card border border-dark rounded-0 mx-auto" style="max-width: 650px;">
            <div class="card-body p-0">
              <table class="table table-bordered border-dark mb-0 align-middle">
@@ -589,6 +626,42 @@
       </div>
     </div>
   </div>
+  <!-- Modal Input Wawancara Manual -->
+  <div class="modal fade" id="modalInputWawancara" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-primary text-white"><h5 class="modal-title fw-bold">Input Nilai Wawancara</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4">
+              <input type="hidden" id="wNIP">
+              <div class="mb-3"><label class="text-muted small">Nama Peserta</label><input type="text" id="wNama" class="form-control fw-bold" readonly></div>
+              <div class="mb-3"><label class="text-muted small">Nilai Wawancara (Angka)</label><input type="number" id="wSkor" class="form-control form-control-lg" placeholder="Contoh: 85"></div>
+              <div class="mb-3">
+                  <label class="text-muted small">Status Kelulusan Akhir</label>
+                  <select id="wStatus" class="form-select form-select-lg">
+                      <option value="LULUS">LULUS</option>
+                      <option value="TIDAK LULUS">TIDAK LULUS</option>
+                      <option value="BELUM DISET">BELUM DISET</option>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-primary w-100 fw-bold" onclick="simpanNilaiWawancara()"><i class="fas fa-save"></i> Simpan Penilaian</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Upload Excel Wawancara -->
+  <div class="modal fade" id="modalUploadWawancara" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">Upload Rekap Nilai Wawancara</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4">
+              <div class="alert alert-info small">Pastikan format kolom Excel berurutan: <b>NIP, Skor Wawancara, Status (LULUS/TIDAK LULUS)</b>. Mulai baris ke-2.</div>
+              <input type="file" class="form-control" id="fileExcelWawancara" accept=".xlsx, .xls">
+          </div>
+          <div class="modal-footer"><button class="btn btn-success w-100 fw-bold rounded-pill" onclick="prosesUploadWawancara()"><i class="fas fa-upload"></i> Proses Upload</button></div>
+      </div>
+    </div>
+  </div>
 
   <!-- AREA CETAK KARTU WAWANCARA (Tersembunyi, hanya untuk diekspor ke PDF) -->
   <div id="areaCetakWawancara" class="d-none">
@@ -662,6 +735,16 @@
           <div class="mb-3"><label>NIP / Username</label><input type="text" class="form-control" id="uNIP"></div>
           <div class="mb-3"><label>NIK / Password</label><input type="text" class="form-control" id="uNIK"></div>
           <div class="mb-3"><label>Nama Lengkap</label><input type="text" class="form-control" id="uNama"></div>
+                    <!-- TAMBAHAN ROLE -->
+          <div class="mb-3">
+              <label>Pilih Role Akun</label>
+              <select id="uRole" class="form-select">
+                  <option value="Pegawai">Peserta Seleksi (Pegawai)</option>
+                  <option value="Penguji">Panitia / Penguji Wawancara</option>
+                  <option value="Admin">Admin</option>
+              </select>
+          </div>
+        </div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary w-100" onclick="simpanUser()">Simpan Data User</button></div>
       </div>
@@ -955,11 +1038,18 @@ function loadAdminPengaturan() {
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-data'); loadAdminData();">Data Peserta</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-jadwal'); loadAdminJadwal();">Jadwal Ujian</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-hasil-cat'); loadAdminHasilCAT();">Hasil TEST</a></li>
+            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Hasil Wawancara</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-users'); loadUsers();">User Peserta</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-pengaturan'); loadAdminPengaturan();">Pengaturan</a></li>
           `;
           showView('admin-dashboard'); loadAdminDash();
+        } else if (role === 'Penguji') {
+          navLinks.innerHTML = `
+            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Input Nilai Wawancara</a></li>
+          `;
+          showView('admin-wawancara'); loadAdminWawancara();
         } else {
+
           navLinks.innerHTML = `
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-dashboard');">Dashboard</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-biodata'); loadPegawaiBio();">Biodata</a></li>
