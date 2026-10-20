@@ -278,6 +278,7 @@
           <thead class="table-primary">
             <tr>
               <th width="5%"><input type="checkbox" onclick="toggleAllCAT(this)"></th>
+              <th width="5%">No</th> <!-- TAMBAHAN KOLOM NOMOR -->
               <th>NIP / Username</th><th class="text-start">Nama</th><th>Kepribadian</th><th>Profesional</th><th>Sosial</th><th>Total</th><th>Status Kelulusan</th>
             </tr>
           </thead>
@@ -1503,14 +1504,17 @@ function loadAdminJadwal() {
     function renderAdminCATTable(data) {
         const tbody = document.getElementById('tbodyAdminCAT'); 
         if(data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
+            // Colspan diubah menjadi 9 karena ada tambahan kolom No
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">Data tidak ditemukan.</td></tr>`;
             return;
         }
         let html = ''; 
+        let no = 1; // Mulai penghitungan nomor urut
         data.forEach(u => {
             let badge = u.status_lulus_cat === 'LULUS' ? 'bg-success' : (u.status_lulus_cat === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
             html += `<tr>
                 <td><input type="checkbox" class="form-check-input check-cat" value="${u.nip}"></td>
+                <td>${no++}</td> <!-- MENAMPILKAN NOMOR URUT -->
                 <td>${u.nip}</td><td class="text-start fw-bold">${u.nama}</td>
                 <td>${u.skor_kepribadian || '-'}</td><td>${u.skor_profesional || '-'}</td><td>${u.skor_sosial || '-'}</td>
                 <td class="fw-bold text-primary">${u.skor_total || '-'}</td>
@@ -1634,20 +1638,15 @@ function loadAdminJadwal() {
           const msgArea = document.getElementById('cat-status-banner');
           
 if(res && res.status_lulus_cat === 'LULUS') {
-              // PERBAIKAN: Menghilangkan nilai CAT, langsung fokus ke pesan kelulusan dan arahan download kartu wawancara
+              // PERBAIKAN: Mengganti judul dan menghapus kotak alert biru
               msgArea.innerHTML = `
               <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
                   <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
-                  <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS TEST</h4>
+                  <h4 class="fw-bold text-success mb-3 lh-base">SELAMAT ANDA TELAH MENGIKUTI TEST BCKS BERBASIS KOMPUTER SELANJUTNYA SILAHKAN DOWNLOAD ATAU UNDUH KARTU TEST WAWANCARA DI BAWAH INI</h4>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  
-                  <div class="alert alert-info border-info text-dark mb-4" style="background-color: #e3f2fd; border-left: 5px solid #0dcaf0;">
-                      <b>Selamat Anda Telah Mengikuti Test BCKS Berbasis Komputer Selanjutnya Silahkan Download Atau Unduh Kartu Test Wawancara Di Bawah Ini</b>
-                  </div>
                   
                   <button class="btn btn-warning shadow-lg fw-bold btn-lg w-100 py-3" style="max-width: 400px;" onclick="unduhKartuWawancara()"><i class="fas fa-file-pdf fs-5"></i> Unduh Kartu Wawancara</button>
               </div>`;
-
               // MENGISI DATA KE KARTU WAWANCARA TERSEMBUNYI (Tetap sama seperti sebelumnya)
               if (res.foto && res.foto !== "") { document.getElementById('kw_foto').src = res.foto; document.getElementById('kw_foto').style.display = 'block'; document.getElementById('kw_foto_text').style.display = 'none'; } 
               else { document.getElementById('kw_foto').style.display = 'none'; document.getElementById('kw_foto_text').style.display = 'block'; }
