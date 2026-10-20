@@ -1633,14 +1633,18 @@ function loadAdminJadwal() {
           document.getElementById('catTerbukaArea').classList.remove('d-none');
           const msgArea = document.getElementById('cat-status-banner');
           
-          if(res && res.status_lulus_cat === 'LULUS') {
-              // PERBAIKAN: Menghilangkan nilai CAT dan langsung fokus ke download kartu
+if(res && res.status_lulus_cat === 'LULUS') {
+              // PERBAIKAN: Menghilangkan nilai CAT, langsung fokus ke pesan kelulusan dan arahan download kartu wawancara
               msgArea.innerHTML = `
               <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
                   <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
                   <h4 class="fw-bold text-success mb-2">SELAMAT! ANDA DINYATAKAN LOLOS TEST</h4>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  <div class="text-muted fw-bold mb-3 border-top pt-3">Silahkan unduh Kartu Ujian Test Wawancara Anda di bawah ini:</div>
+                  
+                  <div class="alert alert-info border-info text-dark mb-4" style="background-color: #e3f2fd; border-left: 5px solid #0dcaf0;">
+                      <b>Selamat Anda Telah Mengikuti Test BCKS Berbasis Komputer Selanjutnya Silahkan Download Atau Unduh Kartu Test Wawancara Di Bawah Ini</b>
+                  </div>
+                  
                   <button class="btn btn-warning shadow-lg fw-bold btn-lg w-100 py-3" style="max-width: 400px;" onclick="unduhKartuWawancara()"><i class="fas fa-file-pdf fs-5"></i> Unduh Kartu Wawancara</button>
               </div>`;
 
