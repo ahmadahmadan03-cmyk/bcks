@@ -195,18 +195,41 @@ case 'loginUser':
         result = rUsers.map(u => ({ 
             row: u.nip, role: u.role, nip: u.nip, nik: u.nik, nama: u.nama, 
             skor_kepribadian: u.skor_kepribadian || '', skor_profesional: u.skor_profesional || '', 
-            skor_sosial: u.skor_sosial || '', skor_total: u.skor_total || '', status_lulus_cat: u.status_lulus_cat || '' 
+            skor_sosial: u.skor_sosial || '', skor_total: u.skor_total || '', status_lulus_cat: u.status_lulus_cat || '',
+            skor_wawancara: u.skor_wawancara || '', status_wawancara: u.status_wawancara || ''
         }));
         break;
       
       case 'addUserDB':
-        await db.execute({ sql: "INSERT INTO users (role, nip, nik, nama) VALUES ('Pegawai', ?, ?, ?)", args: [args[0], args[1], args[2]] });
+        // Menyimpan role baru (Pegawai atau Penguji)
+        await db.execute({ sql: "INSERT INTO users (role, nip, nik, nama) VALUES (?, ?, ?, ?)", args: [args[3] || 'Pegawai', args[0], args[1], args[2]] });
         result = "User berhasil ditambahkan";
         break;
 
       case 'editUserDB':
-        await db.execute({ sql: "UPDATE users SET nip=?, nik=?, nama=? WHERE nip=?", args: [args[1], args[2], args[3], args[0]] });
+        // Memperbarui role
+        await db.execute({ sql: "UPDATE users SET nip=?, nik=?, nama=?, role=? WHERE nip=?", args: [args[1], args[2], args[3], args[4] || 'Pegawai', args[0]] });
         result = "Data User berhasil diupdate";
+        break;
+
+    
+      case 'saveNilaiWawancara':
+        await db.execute({ sql: "UPDATE users SET skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [args[1], args[2], args[0]] });
+        result = "Nilai wawancara berhasil disimpan";
+        break;
+
+      case 'uploadExcelNilaiWawancara':
+        let excelWw = args[0]; let cWw = 0;
+        for (let row of excelWw) {
+            if (row && row.length >= 1 && row[0]) {
+                let uNip = String(row[0]).trim();
+                let skorW = row[1] ? String(row[1]).trim() : '';
+                let statW = row[2] ? String(row[2]).trim() : '';
+                await db.execute({ sql: "UPDATE users SET skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [skorW, statW, uNip] });
+                cWw++;
+            }
+        }
+        result = cWw + " Data nilai wawancara berhasil diimpor.";
         break;
 
       case 'deleteUserDB':
