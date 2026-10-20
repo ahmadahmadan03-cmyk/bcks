@@ -582,6 +582,7 @@
             <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Tanggal Ujian (Wawancara)</label><input type="date" id="jwTanggal" class="form-control"></div>
             <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Waktu Ujian</label><input type="time" id="jwWaktu" class="form-control"></div>
             <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Ruang</label><input type="text" id="jwRuangan" class="form-control" placeholder="Contoh: Ruang Wawancara 1"></div>
+            <div class="col-12 mb-3"><label class="form-label text-muted small mb-0">Penguji</label><input type="text" id="jwPenguji" class="form-control" placeholder="Contoh: Dr. H. Fulan, M.Pd"></div>
           </div>
         </div>
         <div class="modal-footer"><button class="btn btn-primary w-100" onclick="simpanJadwalWawancara()">Simpan Jadwal Wawancara</button></div>
@@ -615,6 +616,7 @@
                       <tr><td style="font-weight: bold;">Tanggal Ujian</td><td colspan="2">: <span id="kw_tgl"></span></td></tr>
                       <tr><td style="font-weight: bold;">Waktu Ujian</td><td colspan="2">: <span id="kw_waktu"></span></td></tr>
                       <tr><td style="font-weight: bold;">Ruang</td><td colspan="2">: <span id="kw_ruang"></span></td></tr>
+                      <tr><td style="font-weight: bold;">Penguji</td><td colspan="2">: <span id="kw_penguji"></span></td></tr>
                   </table>
               </div>
           </div>
@@ -1748,15 +1750,20 @@ async function submitBiodata() {
         document.getElementById('jwTanggal').value = ""; 
         document.getElementById('jwWaktu').value = ""; 
         document.getElementById('jwRuangan').value = ""; 
+        // TAMBAHAN RESET KOLOM PENGUJI
+        document.getElementById('jwPenguji').value = ""; 
+        
         new bootstrap.Modal(document.getElementById('modalJadwalWawancara')).show(); 
-    }    
+    }
 
     function simpanJadwalWawancara() { 
         let nips = JSON.parse(document.getElementById('jwRow').value); 
         let dataJadwal = { 
             Tanggal_Wawancara: document.getElementById('jwTanggal').value, 
             Waktu_Wawancara: document.getElementById('jwWaktu').value, 
-            Ruang_Wawancara: document.getElementById('jwRuangan').value 
+            Ruang_Wawancara: document.getElementById('jwRuangan').value,
+            // TAMBAHAN MENGIRIM DATA PENGUJI
+            Penguji_Wawancara: document.getElementById('jwPenguji').value 
         }; 
         let btn = document.querySelector("#modalJadwalWawancara .btn-primary"); 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true; 
@@ -1766,13 +1773,12 @@ async function submitBiodata() {
             bootstrap.Modal.getInstance(document.getElementById('modalJadwalWawancara')).hide(); 
             Swal.fire('Berhasil', res, 'success'); 
             let checkboxes = document.querySelectorAll('.check-cat');
-            checkboxes.forEach(c => c.checked = false); // Reset checklist
+            checkboxes.forEach(c => c.checked = false);
         }).withFailureHandler(err => { 
             btn.innerHTML = 'Simpan Jadwal Wawancara'; btn.disabled = false; 
             Swal.fire('Gagal Menyimpan', err.message, 'error'); 
         }).saveJadwalWawancaraMassal(nips, dataJadwal); 
     }
-
     // Fungsi Pegawai Menampilkan Dashboard & Tombol Cetak
     function loadPegawaiHasilCAT() {
        const nip = localStorage.getItem('nip');
@@ -1820,9 +1826,12 @@ async function submitBiodata() {
               document.getElementById('kw_waktu').innerText = wktFormat !== '-' ? wktFormat + ' WIB' : '-';
               document.getElementById('kw_ruang').innerText = res.ruang_wawancara || '-';
               
+              // TAMBAHAN MENAMPILKAN PENGUJI DI KARTU
+              document.getElementById('kw_penguji').innerText = res.penguji_wawancara || '-';
+              
               const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
               document.getElementById('kw_tgl_cetak').innerText = new Date().toLocaleDateString('id-ID', dateOptions);
-
+     
           } else if (res && res.status_lulus_cat === 'TIDAK LULUS') {
               msgArea.innerHTML = `
               <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
