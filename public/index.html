@@ -289,7 +289,7 @@
     <!-- VIEW: ADMIN/PENGUJI HASIL WAWANCARA -->
     <div id="admin-wawancara" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-        <h3 class="mb-3 mb-md-0">Penilaian Hasil Wawancara</h3>
+        <h3 class="mb-3 mb-md-0">Penilaian Hasil Akhir</h3>
         <div class="d-flex gap-2">
           <button class="btn btn-success btn-sm fw-bold shadow-sm" onclick="showModalUploadWawancara()"><i class="fas fa-file-excel"></i> Upload Nilai (Excel)</button>
         </div>
@@ -529,6 +529,13 @@
              <p class="mb-0 text-muted">Hasil tes CAT belum dipublikasikan oleh Panitia.</p>
          </div>
       </div>
+      <!-- VIEW BARU: PEGAWAI HASIL AKHIR -->
+    <div id="pegawai-hasil-akhir" class="view-section">
+      <div class="pt-2 pb-5 text-center mt-4">
+         <h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL AKHIR SELEKSI</h5>
+         <div id="akhir-status-banner" class="mb-5"></div>
+      </div>
+    </div>
 
       <!-- Area Tampil Hasil -->
       <div id="catTerbukaArea" class="hidden pt-2 pb-5 text-center">
@@ -1039,26 +1046,27 @@ function loadAdminPengaturan() {
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-data'); loadAdminData();">Data Peserta</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-jadwal'); loadAdminJadwal();">Jadwal Ujian</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-hasil-cat'); loadAdminHasilCAT();">Hasil TEST</a></li>
-            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Hasil Wawancara</a></li>
+            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Hasil Akhir</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-users'); loadUsers();">User Peserta</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-pengaturan'); loadAdminPengaturan();">Pengaturan</a></li>
           `;
           showView('admin-dashboard'); loadAdminDash();
         } else if (role === 'Penguji') {
           navLinks.innerHTML = `
-            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Input Nilai Wawancara</a></li>
+            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('admin-wawancara'); loadAdminWawancara();">Input Penilaian Hasil Akhir</a></li>
           `;
           showView('admin-wawancara'); loadAdminWawancara();
         } else {
-
           navLinks.innerHTML = `
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-dashboard');">Dashboard</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-biodata'); loadPegawaiBio();">Biodata</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-verifikasi'); loadPegawaiVerif();">Informasi Verifikasi & Kartu</a></li>
             <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-hasil-cat'); loadPegawaiHasilCAT();">Pengumuman Hasil TEST</a></li>
+            <li class="nav-item"><a class="nav-link" href="javascript:void(0)" onclick="showView('pegawai-hasil-akhir'); loadPegawaiHasilAkhir();">Pengumuman Hasil Akhir</a></li>
           `;
           showView('pegawai-dashboard');
         }
+        
       } else {
         document.getElementById('mainNav').style.display = 'none';
         showView('login-view');
@@ -2022,6 +2030,45 @@ async function submitBiodata() {
       var opt = { margin: [0.2, 0.3, 0.2, 0.3], filename: 'Kartu_Tes_CAT_BCKS_'+localStorage.getItem('nip')+'.pdf', image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true }, jsPDF: { unit: 'in', format: 'A4', orientation: 'portrait' } };
       html2pdf().set(opt).from(el).save();
     }
+
+    // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
+    function loadPegawaiHasilAkhir() {
+       const nip = localStorage.getItem('nip');
+       showSpinner(true);
+
+       // Kita bisa menggunakan getHasilCATPegawai karena fungsinya sudah menarik semua data wawancara
+       google.script.run.withSuccessHandler(res => {
+          showSpinner(false);
+          const msgArea = document.getElementById('akhir-status-banner');
+          
+          if(res && res.status_wawancara === 'LULUS') {
+              msgArea.innerHTML = `
+              <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
+                  <i class="fas fa-trophy fa-4x text-success mb-3"></i>
+                  <h4 class="fw-bold text-success mb-3 lh-base">SELAMAT! ANDA DINYATAKAN LULUS SELEKSI AKHIR</h4>
+                  <div class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">SELEKSI BAKAL CALON KEPALA SEKOLAH TAHUN 2026</div>
+                  <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+              </div>`;
+          } else if (res && res.status_wawancara === 'TIDAK LULUS') {
+              msgArea.innerHTML = `
+              <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
+                  <i class="fas fa-times-circle fa-4x text-danger mb-3"></i>
+                  <h4 class="fw-bold text-danger mb-2">MOHON MAAF, ANDA DINYATAKAN TIDAK LULUS PADA TAHAP AKHIR</h4>
+                  <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+              </div>`;
+          } else {
+              msgArea.innerHTML = `
+              <div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center">
+                  <i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i>
+                  <h5 class="fw-bold text-secondary mb-0">PENGUMUMAN HASIL AKHIR BELUM TERSEDIA</h5>
+              </div>`;
+          }
+       }).withFailureHandler(err => { 
+           showSpinner(false); 
+           Swal.fire('Error', err.message, 'error'); 
+       }).getHasilCATPegawai(nip);
+    }
+    
   </script>
 </body>
 </html>
