@@ -2051,6 +2051,7 @@ async function submitBiodata() {
     }
 
     // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
+    // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
     function loadPegawaiHasilAkhir() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -2088,14 +2089,14 @@ async function submitBiodata() {
                   <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>
                   
-                  <div class="card border border-dark rounded-0 mx-auto mt-4" style="max-width: 400px;">
+                  <div class="card border border-dark rounded-0 mx-auto mt-4" style="max-width: 250px;">
                     <div class="card-body p-0">
                       <table class="table table-bordered border-dark mb-0 align-middle">
                          <thead class="text-center align-middle" style="background-color: transparent;">
-                             <tr><th width="50%">JENIS TES</th><th width="50%">NILAI AKHIR</th></tr>
+                             <tr><th class="py-2">NILAI AKHIR</th></tr>
                          </thead>
                          <tbody>
-                            <tr><td class="fw-bold">Tes Wawancara / Akhir</td><td class="fw-bold text-primary fs-5">${res.skor_wawancara || '-'}</td></tr>
+                            <tr><td class="fw-bold text-primary fs-4 py-3">${res.skor_wawancara || '-'}</td></tr>
                          </tbody>
                       </table>
                     </div>
@@ -2107,14 +2108,14 @@ async function submitBiodata() {
                   <h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4>
                   <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
                   
-                  <div class="card border border-dark rounded-0 mx-auto mt-4 bg-white" style="max-width: 400px;">
+                  <div class="card border border-dark rounded-0 mx-auto mt-4 bg-white" style="max-width: 250px;">
                     <div class="card-body p-0">
                       <table class="table table-bordered border-dark mb-0 align-middle">
                          <thead class="text-center align-middle" style="background-color: transparent;">
-                             <tr><th width="50%">JENIS TES</th><th width="50%">NILAI AKHIR</th></tr>
+                             <tr><th class="py-2">NILAI AKHIR</th></tr>
                          </thead>
                          <tbody>
-                            <tr><td class="fw-bold text-dark">Tes Wawancara / Akhir</td><td class="fw-bold text-danger fs-5">${res.skor_wawancara || '-'}</td></tr>
+                            <tr><td class="fw-bold text-danger fs-4 py-3">${res.skor_wawancara || '-'}</td></tr>
                          </tbody>
                       </table>
                     </div>
@@ -2132,7 +2133,6 @@ async function submitBiodata() {
            Swal.fire('Error', err.message, 'error'); 
        }).getHasilCATPegawai(nip);
     }
-    
   </script>
 </body>
 </html>
