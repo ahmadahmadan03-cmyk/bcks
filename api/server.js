@@ -127,22 +127,33 @@ case 'loginUser':
         result = { status: "success", role: user.role, nip: user.nip, nama: user.nama };
         break;
       // 2. PERBAIKAN: Menarik data akses login ke Frontend
+      // 1. UPDATE: Tambahkan Buka_Pengumuman_Akhir
       case 'getPengaturanGlobal':
         const { rows: rPeng } = await db.execute("SELECT * FROM pengaturan");
         const { rows: rPengumuman } = await db.execute("SELECT * FROM pengumuman ORDER BY rowid DESC");
         
-        let configData = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false", Akses_Login: "true", Pesan_Tutup: "" };
+        // Tambahkan default value untuk fitur baru
+        let configData = { Batas_Waktu: "", PengumumanList: [], Buka_Pengumuman_CAT: "false", Akses_Login: "true", Pesan_Tutup: "", Buka_Pengumuman_Akhir: "false" };
         rPeng.forEach(row => {
            if(row.kunci === "Batas_Waktu" && row.nilai) configData.Batas_Waktu = new Date(row.nilai).toISOString();
            if(row.kunci === "Buka_Pengumuman_CAT" && row.nilai) configData.Buka_Pengumuman_CAT = row.nilai;
            if(row.kunci === "Akses_Login_Peserta" && row.nilai) configData.Akses_Login = row.nilai;
            if(row.kunci === "Pesan_Tutup_Akses" && row.nilai) configData.Pesan_Tutup = row.nilai;
+           if(row.kunci === "Buka_Pengumuman_Akhir" && row.nilai) configData.Buka_Pengumuman_Akhir = row.nilai;
         });
         rPengumuman.forEach(p => configData.PengumumanList.push({ row: p.id, id: p.id, tanggal: p.tanggal, judul: p.judul, teks: p.teks, file: p.file_url }));
         result = configData;
         break;
 
-      // 3. TAMBAHKAN: Action baru untuk menyimpan pengaturan Buka/Tutup akses
+      // 2. TAMBAHKAN FUNGSI BARU: Saklar Buka/Tutup Hasil Akhir
+      case 'togglePengumumanHasilAkhir':
+        const cekToggleAkhir = await db.execute("SELECT * FROM pengaturan WHERE kunci = 'Buka_Pengumuman_Akhir'");
+        if (cekToggleAkhir.rows.length > 0) await db.execute({ sql: "UPDATE pengaturan SET nilai = ? WHERE kunci = 'Buka_Pengumuman_Akhir'", args: [args[0]] });
+        else await db.execute({ sql: "INSERT INTO pengaturan (kunci, nilai) VALUES ('Buka_Pengumuman_Akhir', ?)", args: [args[0]] });
+        result = "Status tayang pengumuman Hasil Akhir berhasil diubah!";
+        break;
+
+         // 3. TAMBAHKAN: Action baru untuk menyimpan pengaturan Buka/Tutup akses
       case 'savePengaturanAkses':
         let statusAkses = args[0]; 
         let pesanTutup = args[1];
