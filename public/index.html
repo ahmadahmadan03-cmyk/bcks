@@ -2051,8 +2051,6 @@ async function submitBiodata() {
     }
 
     // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
-    // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
-    // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
     function loadPegawaiHasilAkhir() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -2082,6 +2080,36 @@ async function submitBiodata() {
             </div>`;
           document.getElementById('pegawai-hasil-akhir').innerHTML = baseHtml;
           const msgArea = document.getElementById('akhir-status-banner');
+
+          // Menyiapkan Data Nilai & Kalkulasi Total
+          let nilaiCAT = parseFloat(res?.skor_total) || 0;
+          let nilaiWawancara = parseFloat(res?.skor_wawancara) || 0;
+          let totalAkhir = (nilaiCAT + nilaiWawancara) > 0 ? (nilaiCAT + nilaiWawancara) : '-';
+          
+          // Template Tabel 4 Kolom Elegan
+          let tabelHasilElegan = `
+          <div class="card shadow border-0 mx-auto mt-4" style="max-width: 850px; border-radius: 12px; overflow: hidden;">
+              <div class="table-responsive">
+                  <table class="table table-bordered mb-0 align-middle" style="border-color: #e2e8f0; min-width: 650px;">
+                     <thead class="text-center align-middle" style="background-color: #e2e8f0;">
+                         <tr>
+                             <th class="py-3 px-2" style="color: #334155; width: 25%; font-size: 0.95rem;">NILAI SELEKSI<br>ADMINISTRASI</th>
+                             <th class="py-3 px-2" style="color: #334155; width: 25%; font-size: 0.95rem;">NILAI TES BERBASIS<br>KOMPUTER</th>
+                             <th class="py-3 px-2" style="color: #334155; width: 25%; font-size: 0.95rem;">NILAI TES<br>WAWANCARA</th>
+                             <th class="py-3 px-2" style="color: #334155; width: 25%; font-size: 0.95rem;">TOTAL</th>
+                         </tr>
+                     </thead>
+                     <tbody style="background-color: #ffffff;">
+                        <tr>
+                             <td class="text-center py-4 fw-bold text-success fs-5">LULUS</td>
+                             <td class="text-center py-4 fw-bold text-dark fs-5">${res?.skor_total || '-'}</td>
+                             <td class="text-center py-4 fw-bold text-dark fs-5">${res?.skor_wawancara || '-'}</td>
+                             <td class="text-center py-4 fw-bold text-primary" style="font-size: 1.8rem;">${totalAkhir}</td>
+                        </tr>
+                     </tbody>
+                  </table>
+              </div>
+          </div>`;
           
           if(res && res.status_wawancara === 'LULUS') {
               msgArea.innerHTML = `
@@ -2089,34 +2117,14 @@ async function submitBiodata() {
                   <h4 class="fw-bold text-success mb-4 lh-base">SELAMAT! ANDA DINYATAKAN LULUS</h4>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>
-                  
-                  <div class="card shadow border-0 mx-auto mt-4" style="max-width: 280px; border-radius: 12px; overflow: hidden;">
-                      <table class="table table-bordered mb-0 align-middle" style="border-color: #e2e8f0;">
-                         <thead class="text-center align-middle" style="background-color: #f1f5f9;">
-                             <tr><th class="py-3" style="color: #475569; letter-spacing: 1.5px;">HASIL AKHIR</th></tr>
-                         </thead>
-                         <tbody style="background-color: #ffffff;">
-                            <tr><td class="fw-bold text-primary text-center py-4" style="font-size: 2.5rem;">${res.skor_wawancara || '-'}</td></tr>
-                         </tbody>
-                      </table>
-                  </div>
+                  ${tabelHasilElegan}
               </div>`;
           } else if (res && res.status_wawancara === 'TIDAK LULUS') {
               msgArea.innerHTML = `
               <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
                   <h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4>
                   <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  
-                  <div class="card shadow border-0 mx-auto mt-4" style="max-width: 280px; border-radius: 12px; overflow: hidden;">
-                      <table class="table table-bordered mb-0 align-middle" style="border-color: #e2e8f0;">
-                         <thead class="text-center align-middle" style="background-color: #f1f5f9;">
-                             <tr><th class="py-3" style="color: #475569; letter-spacing: 1.5px;">HASIL AKHIR</th></tr>
-                         </thead>
-                         <tbody style="background-color: #ffffff;">
-                            <tr><td class="fw-bold text-danger text-center py-4" style="font-size: 2.5rem;">${res.skor_wawancara || '-'}</td></tr>
-                         </tbody>
-                      </table>
-                  </div>
+                  ${tabelHasilElegan}
               </div>`;
           } else {
               msgArea.innerHTML = `
