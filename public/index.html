@@ -290,7 +290,12 @@
     <div id="admin-wawancara" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <h3 class="mb-3 mb-md-0">Penilaian Hasil Akhir</h3>
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <!-- SAKLAR BARU UNTUK MEMBUKA/MENUTUP PENGUMUMAN AKHIR -->
+          <div class="form-check form-switch fs-5">
+            <input class="form-check-input" type="checkbox" id="switchBukaAkhir" onchange="toggleBukaAkhir(this)">
+            <label class="form-check-label fs-6 fw-bold" for="switchBukaAkhir">Tampilkan ke Peserta</label>
+          </div>
           <button class="btn btn-success btn-sm fw-bold shadow-sm" onclick="showModalUploadWawancara()"><i class="fas fa-file-excel"></i> Upload Nilai (Excel)</button>
         </div>
       </div>
@@ -313,7 +318,8 @@
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
         <table class="table table-bordered table-hover text-center align-middle" style="font-size: 0.9rem;">
           <thead class="table-primary">
-            <tr><th>No</th><th>NIP</th><th class="text-start">Nama</th><th>Ruang & Penguji</th><th>Nilai Wawancara</th><th>Status</th><th>Aksi</th></tr>
+            <!-- MENGGANTI TEKS "Nilai Wawancara" MENJADI "Nilai Akhir" -->
+            <tr><th>No</th><th>NIP</th><th class="text-start">Nama</th><th>Ruang & Penguji</th><th>Nilai Akhir</th><th>Status</th><th>Aksi</th></tr>
           </thead>
           <tbody id="tbodyWawancara"></tbody>
         </table>
@@ -642,7 +648,7 @@
           <div class="modal-body p-4">
               <input type="hidden" id="wNIP">
               <div class="mb-3"><label class="text-muted small">Nama Peserta</label><input type="text" id="wNama" class="form-control fw-bold" readonly></div>
-              <div class="mb-3"><label class="text-muted small">Nilai Wawancara (Angka)</label><input type="number" id="wSkor" class="form-control form-control-lg" placeholder="Contoh: 85"></div>
+              <div class="mb-3"><label class="text-muted small">Nilai Akhir (Angka)</label><input type="number" id="wSkor" class="form-control form-control-lg" placeholder="Contoh: 85"></div>
               <div class="mb-3">
                   <label class="text-muted small">Status Kelulusan Akhir</label>
                   <select id="wStatus" class="form-select form-select-lg">
@@ -879,6 +885,7 @@ function createProxy(handlers) {
     let globalAdminData = [];
     let globalDataUsers = []; 
     let globalDataCAT = []; 
+    let globalBukaPengumumanAkhir = "false"; // Variabel baru
 
     document.addEventListener("DOMContentLoaded", function() { 
         checkSession(); 
@@ -978,10 +985,18 @@ function loadAdminPengaturan() {
          .withSuccessHandler(res => {
           globalBatasWaktu = res.Batas_Waktu;
           globalDaftarPengumuman = res.PengumumanList || [];
+          
+          // Membaca status saklar dari database
           globalBukaPengumumanCAT = res.Buka_Pengumuman_CAT || "false";
+          globalBukaPengumumanAkhir = res.Buka_Pengumuman_Akhir || "false"; 
 
+          // Mengatur tampilan saklar CAT
           let switchCat = document.getElementById('switchBukaCAT');
           if(switchCat) switchCat.checked = (globalBukaPengumumanCAT === "true");
+          
+          // Mengatur tampilan saklar Hasil Akhir
+          let switchAkhir = document.getElementById('switchBukaAkhir');
+          if(switchAkhir) switchAkhir.checked = (globalBukaPengumumanAkhir === "true"); 
 
           let containers = document.querySelectorAll('.container-batas-waktu');
           let texts = document.querySelectorAll('.info-batas-waktu');
@@ -1616,6 +1631,13 @@ function loadAdminJadwal() {
            Swal.fire('Berhasil', res, 'success'); 
        }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); cb.checked = !cb.checked; }).togglePengumumanCAT(val);
     }
+    function toggleBukaAkhir(cb) {
+       let val = cb.checked ? "true" : "false";
+       google.script.run.withSuccessHandler(res => { 
+           globalBukaPengumumanAkhir = val; 
+           Swal.fire('Berhasil', res, 'success'); 
+       }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); cb.checked = !cb.checked; }).togglePengumumanHasilAkhir(val);
+    }
     // ================= FUNGSI ADMIN USERS (UPDATE ROLE) =================
     function renderAdminUsersTable(data) {
         const tbody = document.getElementById('tbodyUsers'); 
@@ -2036,25 +2058,70 @@ async function submitBiodata() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
 
-       // Kita bisa menggunakan getHasilCATPegawai karena fungsinya sudah menarik semua data wawancara
+       // Cek apakah saklar pengumuman akhir sudah dibuka Admin
+       if(globalBukaPengumumanAkhir !== "true") {
+           showSpinner(false);
+           document.getElementById('pegawai-hasil-akhir').innerHTML = `
+           <div class="pt-2 pb-5 text-center mt-4">
+              <div class="alert alert-warning text-center p-5 rounded-4 shadow-sm border-0">
+                 <i class="fas fa-lock fa-3x mb-3 text-warning"></i>
+                 <h4 class="fw-bold">Pengumuman Belum Dibuka</h4>
+                 <p class="mb-0 text-muted">Hasil Akhir belum dipublikasikan oleh Panitia.</p>
+              </div>
+           </div>`;
+           return;
+       }
+
        google.script.run.withSuccessHandler(res => {
           showSpinner(false);
+          
+          // Template area HTML untuk Pengumuman Hasil Akhir
+          let baseHtml = `
+            <div class="pt-2 pb-5 text-center mt-4">
+               <h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL AKHIR SELEKSI</h5>
+               <div id="akhir-status-banner" class="mb-5"></div>
+            </div>`;
+          document.getElementById('pegawai-hasil-akhir').innerHTML = baseHtml;
           const msgArea = document.getElementById('akhir-status-banner');
           
           if(res && res.status_wawancara === 'LULUS') {
               msgArea.innerHTML = `
               <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
-                  <i class="fas fa-trophy fa-4x text-success mb-3"></i>
-                  <h4 class="fw-bold text-success mb-3 lh-base">SELAMAT! ANDA DINYATAKAN LULUS SELEKSI AKHIR</h4>
-                  <div class="fw-bold text-dark mb-2" style="font-size: 1.1rem;">SELEKSI BAKAL CALON KEPALA SEKOLAH TAHUN 2026</div>
-                  <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+                  <h4 class="fw-bold text-success mb-4 lh-base">SELAMAT! ANDA DINYATAKAN LULUS</h4>
+                  <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+                  <div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>
+                  
+                  <div class="card border border-dark rounded-0 mx-auto mt-4" style="max-width: 400px;">
+                    <div class="card-body p-0">
+                      <table class="table table-bordered border-dark mb-0 align-middle">
+                         <thead class="text-center align-middle" style="background-color: transparent;">
+                             <tr><th width="50%">JENIS TES</th><th width="50%">NILAI AKHIR</th></tr>
+                         </thead>
+                         <tbody>
+                            <tr><td class="fw-bold">Tes Wawancara / Akhir</td><td class="fw-bold text-primary fs-5">${res.skor_wawancara || '-'}</td></tr>
+                         </tbody>
+                      </table>
+                    </div>
+                  </div>
               </div>`;
           } else if (res && res.status_wawancara === 'TIDAK LULUS') {
               msgArea.innerHTML = `
               <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
-                  <i class="fas fa-times-circle fa-4x text-danger mb-3"></i>
-                  <h4 class="fw-bold text-danger mb-2">MOHON MAAF, ANDA DINYATAKAN TIDAK LULUS PADA TAHAP AKHIR</h4>
+                  <h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4>
                   <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
+                  
+                  <div class="card border border-dark rounded-0 mx-auto mt-4 bg-white" style="max-width: 400px;">
+                    <div class="card-body p-0">
+                      <table class="table table-bordered border-dark mb-0 align-middle">
+                         <thead class="text-center align-middle" style="background-color: transparent;">
+                             <tr><th width="50%">JENIS TES</th><th width="50%">NILAI AKHIR</th></tr>
+                         </thead>
+                         <tbody>
+                            <tr><td class="fw-bold text-dark">Tes Wawancara / Akhir</td><td class="fw-bold text-danger fs-5">${res.skor_wawancara || '-'}</td></tr>
+                         </tbody>
+                      </table>
+                    </div>
+                  </div>
               </div>`;
           } else {
               msgArea.innerHTML = `
