@@ -2052,6 +2052,7 @@ async function submitBiodata() {
 
     // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
     // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
+    // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
     function loadPegawaiHasilAkhir() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
@@ -2089,17 +2090,15 @@ async function submitBiodata() {
                   <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
                   <div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>
                   
-                  <div class="card border border-dark rounded-0 mx-auto mt-4" style="max-width: 250px;">
-                    <div class="card-body p-0">
-                      <table class="table table-bordered border-dark mb-0 align-middle">
-                         <thead class="text-center align-middle" style="background-color: transparent;">
-                             <tr><th class="py-2">NILAI AKHIR</th></tr>
+                  <div class="card shadow border-0 mx-auto mt-4" style="max-width: 280px; border-radius: 12px; overflow: hidden;">
+                      <table class="table table-bordered mb-0 align-middle" style="border-color: #e2e8f0;">
+                         <thead class="text-center align-middle" style="background-color: #f1f5f9;">
+                             <tr><th class="py-3" style="color: #475569; letter-spacing: 1.5px;">HASIL AKHIR</th></tr>
                          </thead>
-                         <tbody>
-                            <tr><td class="fw-bold text-primary fs-4 py-3">${res.skor_wawancara || '-'}</td></tr>
+                         <tbody style="background-color: #ffffff;">
+                            <tr><td class="fw-bold text-primary text-center py-4" style="font-size: 2.5rem;">${res.skor_wawancara || '-'}</td></tr>
                          </tbody>
                       </table>
-                    </div>
                   </div>
               </div>`;
           } else if (res && res.status_wawancara === 'TIDAK LULUS') {
@@ -2108,17 +2107,15 @@ async function submitBiodata() {
                   <h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4>
                   <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
                   
-                  <div class="card border border-dark rounded-0 mx-auto mt-4 bg-white" style="max-width: 250px;">
-                    <div class="card-body p-0">
-                      <table class="table table-bordered border-dark mb-0 align-middle">
-                         <thead class="text-center align-middle" style="background-color: transparent;">
-                             <tr><th class="py-2">NILAI AKHIR</th></tr>
+                  <div class="card shadow border-0 mx-auto mt-4" style="max-width: 280px; border-radius: 12px; overflow: hidden;">
+                      <table class="table table-bordered mb-0 align-middle" style="border-color: #e2e8f0;">
+                         <thead class="text-center align-middle" style="background-color: #f1f5f9;">
+                             <tr><th class="py-3" style="color: #475569; letter-spacing: 1.5px;">HASIL AKHIR</th></tr>
                          </thead>
-                         <tbody>
-                            <tr><td class="fw-bold text-danger fs-4 py-3">${res.skor_wawancara || '-'}</td></tr>
+                         <tbody style="background-color: #ffffff;">
+                            <tr><td class="fw-bold text-danger text-center py-4" style="font-size: 2.5rem;">${res.skor_wawancara || '-'}</td></tr>
                          </tbody>
                       </table>
-                    </div>
                   </div>
               </div>`;
           } else {
