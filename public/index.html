@@ -669,6 +669,51 @@
       </div>
     </div>
   </div>
+  <!-- Modal Input Hasil Akhir Manual -->
+  <div class="modal fade" id="modalInputWawancara" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-primary text-white"><h5 class="modal-title fw-bold">Input Penilaian Akhir</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4">
+              <input type="hidden" id="wNIP">
+              <div class="mb-3"><label class="text-muted small">Nama Peserta</label><input type="text" id="wNama" class="form-control fw-bold" readonly></div>
+              <div class="row">
+                  <div class="col-6 mb-3">
+                      <label class="text-muted small">Nilai Administrasi (Angka)</label>
+                      <input type="number" id="wSkorAdm" class="form-control form-control-lg text-center" placeholder="Contoh: 80">
+                  </div>
+                  <div class="col-6 mb-3">
+                      <label class="text-muted small">Nilai Wawancara (Angka)</label>
+                      <input type="number" id="wSkor" class="form-control form-control-lg text-center" placeholder="Contoh: 85">
+                  </div>
+              </div>
+              <div class="mb-3">
+                  <label class="text-muted small">Status Kelulusan Akhir</label>
+                  <select id="wStatus" class="form-select form-select-lg">
+                      <option value="LULUS">LULUS</option>
+                      <option value="TIDAK LULUS">TIDAK LULUS</option>
+                      <option value="BELUM DISET">BELUM DISET</option>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-primary w-100 fw-bold" onclick="simpanNilaiWawancara()"><i class="fas fa-save"></i> Simpan Penilaian</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Upload Excel Hasil Akhir -->
+  <div class="modal fade" id="modalUploadWawancara" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">Upload Rekap Nilai Akhir</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4">
+              <div class="alert alert-info small">Pastikan format kolom Excel berurutan: <b>NIP, Nilai Administrasi, Nilai Wawancara, Status (LULUS/TIDAK LULUS)</b>. Mulai dari baris ke-2.</div>
+              <input type="file" class="form-control" id="fileExcelWawancara" accept=".xlsx, .xls">
+          </div>
+          <div class="modal-footer"><button class="btn btn-success w-100 fw-bold rounded-pill" onclick="prosesUploadWawancara()"><i class="fas fa-upload"></i> Proses Upload</button></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal Upload Excel Wawancara -->
   <div class="modal fade" id="modalUploadWawancara" tabindex="-1">
@@ -1732,90 +1777,8 @@ if(res && res.status_lulus_cat === 'LULUS') {
         renderWawancaraTable(filtered);
     }
 
-    function renderWawancaraTable(data) {
-        const tbody = document.getElementById('tbodyWawancara');
-        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
-        
-        let html = ''; 
-        let no = 1;
-        
-        data.forEach(u => {
-            let b = globalAdminData.find(x => x.NIP === u.nip) || {};
-            let badge = u.status_wawancara === 'LULUS' ? 'bg-success' : (u.status_wawancara === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
-            
-            // Kalkulasi Total Nilai
-            let nilaiCAT = parseFloat(u.skor_total) || 0;
-            let nilaiWawancara = parseFloat(u.skor_wawancara) || 0;
-            let totalAkhir = (nilaiCAT + nilaiWawancara) > 0 ? (nilaiCAT + nilaiWawancara) : '-';
-
-            html += `<tr>
-                <td>${no++}</td>
-                <td>${u.nip}</td>
-                <td class="text-start"><b>${u.nama}</b><br><small class="text-muted">Penguji: ${b.penguji_wawancara || '-'}</small></td>
-                <td class="fw-bold text-success">LULUS</td>
-                <td class="fw-bold">${u.skor_total || '-'}</td>
-                <td class="fw-bold text-primary">${u.skor_wawancara || '-'}</td>
-                <td class="fw-bold text-dark fs-6">${totalAkhir}</td>
-                <td><span class="badge ${badge} p-2">${u.status_wawancara || 'Belum Dinilai'}</span></td>
-                <td><button class="btn btn-sm btn-primary shadow-sm" onclick="bukaInputWawancara('${u.nip}', '${u.nama}', '${u.skor_wawancara || ''}', '${u.status_wawancara || ''}')"><i class="fas fa-edit"></i> Input</button></td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-
-    // FUNGSI BARU: Download Template Excel untuk Nilai Wawancara/Hasil Akhir
-    function downloadTemplateWawancara() { 
-        var wb = XLSX.utils.book_new(); 
-        var ws_data = [
-            ["NIP", "Skor Wawancara", "Status (LULUS/TIDAK LULUS)"], 
-            ["1985010101", "90", "LULUS"],
-            ["1985010102", "85", "TIDAK LULUS"]
-        ]; 
-        var ws = XLSX.utils.aoa_to_sheet(ws_data); 
-        
-        // Mengatur lebar kolom agar rapi
-        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}];
-        
-        XLSX.utils.book_append_sheet(wb, ws, "Template_Nilai_Akhir"); 
-        XLSX.writeFile(wb, "Template_Upload_Nilai_Akhir.xlsx"); 
-    }
-    
-    function bukaInputWawancara(nip, nama, skor, status) {
-        document.getElementById('wNIP').value = nip;
-        document.getElementById('wNama').value = nama;
-        document.getElementById('wSkor').value = skor;
-        document.getElementById('wStatus').value = status || 'BELUM DISET';
-        new bootstrap.Modal(document.getElementById('modalInputWawancara')).show();
-    }
-
-    function simpanNilaiWawancara() {
-        let nip = document.getElementById('wNIP').value; let skor = document.getElementById('wSkor').value; let status = document.getElementById('wStatus').value;
-        let btn = document.querySelector("#modalInputWawancara .btn-primary"); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
-        google.script.run.withSuccessHandler(res => {
-            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false;
-            bootstrap.Modal.getInstance(document.getElementById('modalInputWawancara')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara();
-        }).withFailureHandler(err => {
-            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false; Swal.fire('Error', err.message, 'error');
-        }).saveNilaiWawancara(nip, skor, status);
-    }
-    
     function showModalUploadWawancara() { document.getElementById('fileExcelWawancara').value = ''; new bootstrap.Modal(document.getElementById('modalUploadWawancara')).show(); }
 
-    function prosesUploadWawancara() {
-      let fileInput = document.getElementById('fileExcelWawancara'); if(fileInput.files.length === 0) return Swal.fire('Peringatan', 'Pilih file Excel terlebih dahulu!', 'warning');
-      let file = fileInput.files[0]; let reader = new FileReader();
-      reader.onload = function(e) { 
-          let workbook = XLSX.read(e.target.result, {type: 'binary'}); let excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); if(excelRows.length > 0) excelRows.shift(); 
-          let dataToUpload = [];
-          for(let row of excelRows) {
-              if(row && row.length >= 1 && row[0]) {
-                  dataToUpload.push([ String(row[0]).trim(), row[1] ? String(row[1]).trim() : '', row[2] ? String(row[2]).trim() : '' ]);
-              }
-          }
-          bootstrap.Modal.getInstance(document.getElementById('modalUploadWawancara')).hide(); showSpinner(true); 
-          google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).uploadExcelNilaiWawancara(dataToUpload); 
-      }; reader.readAsBinaryString(file);
-    }
 
     // ================= FUNGSI PEGAWAI BIODATA & VERIFIKASI =================
     let oldFiles = {};
@@ -2088,43 +2051,109 @@ async function submitBiodata() {
       html2pdf().set(opt).from(el).save();
     }
 
+    function renderWawancaraTable(data) {
+        const tbody = document.getElementById('tbodyWawancara');
+        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
+        let html = ''; let no = 1;
+        data.forEach(u => {
+            let b = globalAdminData.find(x => x.NIP === u.nip) || {};
+            let badge = u.status_wawancara === 'LULUS' ? 'bg-success' : (u.status_wawancara === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
+            
+            let nilaiAdm = parseFloat(u.skor_administrasi) || 0;
+            let nilaiCAT = parseFloat(u.skor_total) || 0;
+            let nilaiWawancara = parseFloat(u.skor_wawancara) || 0;
+            let totalAkhir = (nilaiAdm + nilaiCAT + nilaiWawancara) > 0 ? (nilaiAdm + nilaiCAT + nilaiWawancara) : '-';
+
+            html += `<tr>
+                <td>${no++}</td>
+                <td>${u.nip}</td>
+                <td class="text-start"><b>${u.nama}</b><br><small class="text-muted">Penguji: ${b.penguji_wawancara || '-'}</small></td>
+                <td class="fw-bold text-success">${u.skor_administrasi || '-'}</td>
+                <td class="fw-bold">${u.skor_total || '-'}</td>
+                <td class="fw-bold text-primary">${u.skor_wawancara || '-'}</td>
+                <td class="fw-bold text-dark fs-6">${totalAkhir}</td>
+                <td><span class="badge ${badge} p-2">${u.status_wawancara || 'Belum Dinilai'}</span></td>
+                <td><button class="btn btn-sm btn-primary shadow-sm" onclick="bukaInputWawancara('${u.nip}', '${u.nama}', '${u.skor_administrasi || ''}', '${u.skor_wawancara || ''}', '${u.status_wawancara || ''}')"><i class="fas fa-edit"></i> Input</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function downloadTemplateWawancara() { 
+        var wb = XLSX.utils.book_new(); 
+        var ws_data = [
+            ["NIP", "Skor Administrasi", "Skor Wawancara", "Status (LULUS/TIDAK LULUS)"], 
+            ["1985010101", "80", "90", "LULUS"],
+            ["1985010102", "75", "85", "TIDAK LULUS"]
+        ]; 
+        var ws = XLSX.utils.aoa_to_sheet(ws_data); 
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 20}, {wch: 30}];
+        XLSX.utils.book_append_sheet(wb, ws, "Template_Nilai_Akhir"); 
+        XLSX.writeFile(wb, "Template_Upload_Nilai_Akhir.xlsx"); 
+    }
+
+    function bukaInputWawancara(nip, nama, skorAdm, skorWawancara, status) {
+        document.getElementById('wNIP').value = nip;
+        document.getElementById('wNama').value = nama;
+        document.getElementById('wSkorAdm').value = skorAdm;
+        document.getElementById('wSkor').value = skorWawancara;
+        document.getElementById('wStatus').value = status || 'BELUM DISET';
+        new bootstrap.Modal(document.getElementById('modalInputWawancara')).show();
+    }
+
+    function simpanNilaiWawancara() {
+        let nip = document.getElementById('wNIP').value; 
+        let skorAdm = document.getElementById('wSkorAdm').value;
+        let skorWawancara = document.getElementById('wSkor').value; 
+        let status = document.getElementById('wStatus').value;
+        
+        let btn = document.querySelector("#modalInputWawancara .btn-primary"); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+        google.script.run.withSuccessHandler(res => {
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false;
+            bootstrap.Modal.getInstance(document.getElementById('modalInputWawancara')).hide(); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara();
+        }).withFailureHandler(err => {
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Penilaian'; btn.disabled = false; Swal.fire('Error', err.message, 'error');
+        }).saveNilaiWawancara(nip, skorAdm, skorWawancara, status);
+    }
+
+    function prosesUploadWawancara() {
+      let fileInput = document.getElementById('fileExcelWawancara'); if(fileInput.files.length === 0) return Swal.fire('Peringatan', 'Pilih file Excel terlebih dahulu!', 'warning');
+      let file = fileInput.files[0]; let reader = new FileReader();
+      reader.onload = function(e) { 
+          let workbook = XLSX.read(e.target.result, {type: 'binary'}); let excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); if(excelRows.length > 0) excelRows.shift(); 
+          let dataToUpload = [];
+          for(let row of excelRows) {
+              if(row && row.length >= 1 && row[0]) {
+                  dataToUpload.push([ String(row[0]).trim(), row[1] ? String(row[1]).trim() : '', row[2] ? String(row[2]).trim() : '', row[3] ? String(row[3]).trim() : '' ]);
+              }
+          }
+          bootstrap.Modal.getInstance(document.getElementById('modalUploadWawancara')).hide(); showSpinner(true); 
+          google.script.run.withSuccessHandler(res => { showSpinner(false); Swal.fire('Berhasil', res, 'success'); loadAdminWawancara(); }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).uploadExcelNilaiWawancara(dataToUpload); 
+      }; reader.readAsBinaryString(file);
+    }
+
     // ================= FUNGSI BARU: Load Pengumuman Hasil Akhir untuk Peserta =================
     function loadPegawaiHasilAkhir() {
        const nip = localStorage.getItem('nip');
        showSpinner(true);
 
-       // Cek apakah saklar pengumuman akhir sudah dibuka Admin
        if(globalBukaPengumumanAkhir !== "true") {
            showSpinner(false);
-           document.getElementById('pegawai-hasil-akhir').innerHTML = `
-           <div class="pt-2 pb-5 text-center mt-4">
-              <div class="alert alert-warning text-center p-5 rounded-4 shadow-sm border-0">
-                 <i class="fas fa-lock fa-3x mb-3 text-warning"></i>
-                 <h4 class="fw-bold">Pengumuman Belum Dibuka</h4>
-                 <p class="mb-0 text-muted">Hasil Akhir belum dipublikasikan oleh Panitia.</p>
-              </div>
-           </div>`;
+           document.getElementById('pegawai-hasil-akhir').innerHTML = `<div class="pt-2 pb-5 text-center mt-4"><div class="alert alert-warning text-center p-5 rounded-4 shadow-sm border-0"><i class="fas fa-lock fa-3x mb-3 text-warning"></i><h4 class="fw-bold">Pengumuman Belum Dibuka</h4><p class="mb-0 text-muted">Hasil Akhir belum dipublikasikan oleh Panitia.</p></div></div>`;
            return;
        }
 
        google.script.run.withSuccessHandler(res => {
           showSpinner(false);
-          
-          // Template area HTML untuk Pengumuman Hasil Akhir
-          let baseHtml = `
-            <div class="pt-2 pb-5 text-center mt-4">
-               <h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL AKHIR SELEKSI</h5>
-               <div id="akhir-status-banner" class="mb-5"></div>
-            </div>`;
+          let baseHtml = `<div class="pt-2 pb-5 text-center mt-4"><h5 class="mb-5 fw-bold text-dark" style="text-decoration: underline;">PENGUMUMAN HASIL AKHIR SELEKSI</h5><div id="akhir-status-banner" class="mb-5"></div></div>`;
           document.getElementById('pegawai-hasil-akhir').innerHTML = baseHtml;
           const msgArea = document.getElementById('akhir-status-banner');
 
-          // Menyiapkan Data Nilai & Kalkulasi Total
+          let nilaiAdm = parseFloat(res?.skor_administrasi) || 0;
           let nilaiCAT = parseFloat(res?.skor_total) || 0;
           let nilaiWawancara = parseFloat(res?.skor_wawancara) || 0;
-          let totalAkhir = (nilaiCAT + nilaiWawancara) > 0 ? (nilaiCAT + nilaiWawancara) : '-';
+          let totalAkhir = (nilaiAdm + nilaiCAT + nilaiWawancara) > 0 ? (nilaiAdm + nilaiCAT + nilaiWawancara) : '-';
           
-          // Template Tabel 4 Kolom Elegan
           let tabelHasilElegan = `
           <div class="card shadow border-0 mx-auto mt-4" style="max-width: 850px; border-radius: 12px; overflow: hidden;">
               <div class="table-responsive">
@@ -2139,7 +2168,7 @@ async function submitBiodata() {
                      </thead>
                      <tbody style="background-color: #ffffff;">
                         <tr>
-                             <td class="text-center py-4 fw-bold text-success fs-5">LULUS</td>
+                             <td class="text-center py-4 fw-bold text-success fs-5">${res?.skor_administrasi || '-'}</td>
                              <td class="text-center py-4 fw-bold text-dark fs-5">${res?.skor_total || '-'}</td>
                              <td class="text-center py-4 fw-bold text-dark fs-5">${res?.skor_wawancara || '-'}</td>
                              <td class="text-center py-4 fw-bold text-primary" style="font-size: 1.8rem;">${totalAkhir}</td>
@@ -2150,31 +2179,13 @@ async function submitBiodata() {
           </div>`;
           
           if(res && res.status_wawancara === 'LULUS') {
-              msgArea.innerHTML = `
-              <div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center">
-                  <h4 class="fw-bold text-success mb-4 lh-base">SELAMAT! ANDA DINYATAKAN LULUS</h4>
-                  <div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  <div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>
-                  ${tabelHasilElegan}
-              </div>`;
+              msgArea.innerHTML = `<div class="alert alert-success shadow-sm border-0 mb-4 p-4 text-center"><h4 class="fw-bold text-success mb-4 lh-base">SELAMAT! ANDA DINYATAKAN LULUS</h4><div class="fw-bold text-dark mb-4" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div><div class="fw-bold text-dark mb-4" style="font-size: 1rem;">Silahkan Buka Ruang GTK / Rumah Pendidikan Masing - Masing</div>${tabelHasilElegan}</div>`;
           } else if (res && res.status_wawancara === 'TIDAK LULUS') {
-              msgArea.innerHTML = `
-              <div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red">
-                  <h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4>
-                  <div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>
-                  ${tabelHasilElegan}
-              </div>`;
+              msgArea.innerHTML = `<div class="alert alert-danger shadow-sm border-0 mb-4 p-4 text-center pulse-red"><h4 class="fw-bold text-danger mb-4 lh-base">MOHON MAAF ANDA DINYATAKAN TIDAK LULUS</h4><div class="fw-bold text-dark mb-0" style="font-size: 1.1rem;">SELEKSI TES BCKS TAHUN 2026 DINAS PENDIDIKAN KABUPATEN TANGERANG</div>${tabelHasilElegan}</div>`;
           } else {
-              msgArea.innerHTML = `
-              <div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center">
-                  <i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i>
-                  <h5 class="fw-bold text-secondary mb-0">PENGUMUMAN HASIL AKHIR BELUM TERSEDIA</h5>
-              </div>`;
+              msgArea.innerHTML = `<div class="alert alert-secondary shadow-sm border-0 mb-4 p-4 text-center"><i class="fas fa-info-circle fa-4x text-secondary mb-3 opacity-50"></i><h5 class="fw-bold text-secondary mb-0">PENGUMUMAN HASIL AKHIR BELUM TERSEDIA</h5></div>`;
           }
-       }).withFailureHandler(err => { 
-           showSpinner(false); 
-           Swal.fire('Error', err.message, 'error'); 
-       }).getHasilCATPegawai(nip);
+       }).withFailureHandler(err => { showSpinner(false); Swal.fire('Error', err.message, 'error'); }).getHasilCATPegawai(nip);
     }
   </script>
 </body>
