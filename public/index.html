@@ -290,12 +290,13 @@
     <div id="admin-wawancara" class="view-section">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
         <h3 class="mb-3 mb-md-0">Penilaian Hasil Akhir</h3>
-        <div class="d-flex align-items-center gap-3">
-          <!-- SAKLAR BARU UNTUK MEMBUKA/MENUTUP PENGUMUMAN AKHIR -->
-          <div class="form-check form-switch fs-5">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="form-check form-switch fs-5 me-2">
             <input class="form-check-input" type="checkbox" id="switchBukaAkhir" onchange="toggleBukaAkhir(this)">
             <label class="form-check-label fs-6 fw-bold" for="switchBukaAkhir">Tampilkan ke Peserta</label>
           </div>
+          <!-- FITUR BARU: Tombol Download Template Excel -->
+          <button class="btn btn-info btn-sm fw-bold shadow-sm text-white" onclick="downloadTemplateWawancara()"><i class="fas fa-download"></i> Template Excel</button>
           <button class="btn btn-success btn-sm fw-bold shadow-sm" onclick="showModalUploadWawancara()"><i class="fas fa-file-excel"></i> Upload Nilai (Excel)</button>
         </div>
       </div>
@@ -316,10 +317,19 @@
          </div>
       </div>
       <div class="table-responsive bg-white p-3 shadow-sm rounded">
-        <table class="table table-bordered table-hover text-center align-middle" style="font-size: 0.9rem;">
+        <table class="table table-bordered table-hover text-center align-middle" style="font-size: 0.85rem;">
           <thead class="table-primary">
-            <!-- MENGGANTI TEKS "Nilai Wawancara" MENJADI "Nilai Akhir" -->
-            <tr><th>No</th><th>NIP</th><th class="text-start">Nama</th><th>Ruang & Penguji</th><th>Nilai Akhir</th><th>Status</th><th>Aksi</th></tr>
+            <tr>
+               <th width="3%">No</th>
+               <th>NIP</th>
+               <th class="text-start">Nama Peserta</th>
+               <th width="12%">Nilai Seleksi<br>Administrasi</th>
+               <th width="12%">Nilai Test<br>Berbasis Komputer</th>
+               <th width="12%">Nilai Tes<br>Wawancara</th>
+               <th width="10%">Total</th>
+               <th width="12%">Status Akhir</th>
+               <th width="8%">Aksi</th>
+            </tr>
           </thead>
           <tbody id="tbodyWawancara"></tbody>
         </table>
@@ -1724,22 +1734,50 @@ if(res && res.status_lulus_cat === 'LULUS') {
 
     function renderWawancaraTable(data) {
         const tbody = document.getElementById('tbodyWawancara');
-        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
-        let html = ''; let no = 1;
+        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">Data tidak ditemukan.</td></tr>`; return; }
+        
+        let html = ''; 
+        let no = 1;
+        
         data.forEach(u => {
             let b = globalAdminData.find(x => x.NIP === u.nip) || {};
             let badge = u.status_wawancara === 'LULUS' ? 'bg-success' : (u.status_wawancara === 'TIDAK LULUS' ? 'bg-danger' : 'bg-secondary');
+            
+            // Kalkulasi Total Nilai
+            let nilaiCAT = parseFloat(u.skor_total) || 0;
+            let nilaiWawancara = parseFloat(u.skor_wawancara) || 0;
+            let totalAkhir = (nilaiCAT + nilaiWawancara) > 0 ? (nilaiCAT + nilaiWawancara) : '-';
+
             html += `<tr>
                 <td>${no++}</td>
                 <td>${u.nip}</td>
-                <td class="text-start fw-bold">${u.nama}</td>
-                <td><small>Penguji: <b>${b.penguji_wawancara || '-'}</b><br>Ruang: ${b.ruang_wawancara || '-'}</small></td>
-                <td class="fw-bold text-primary fs-5">${u.skor_wawancara || '-'}</td>
+                <td class="text-start"><b>${u.nama}</b><br><small class="text-muted">Penguji: ${b.penguji_wawancara || '-'}</small></td>
+                <td class="fw-bold text-success">LULUS</td>
+                <td class="fw-bold">${u.skor_total || '-'}</td>
+                <td class="fw-bold text-primary">${u.skor_wawancara || '-'}</td>
+                <td class="fw-bold text-dark fs-6">${totalAkhir}</td>
                 <td><span class="badge ${badge} p-2">${u.status_wawancara || 'Belum Dinilai'}</span></td>
                 <td><button class="btn btn-sm btn-primary shadow-sm" onclick="bukaInputWawancara('${u.nip}', '${u.nama}', '${u.skor_wawancara || ''}', '${u.status_wawancara || ''}')"><i class="fas fa-edit"></i> Input</button></td>
             </tr>`;
         });
         tbody.innerHTML = html;
+    }
+
+    // FUNGSI BARU: Download Template Excel untuk Nilai Wawancara/Hasil Akhir
+    function downloadTemplateWawancara() { 
+        var wb = XLSX.utils.book_new(); 
+        var ws_data = [
+            ["NIP", "Skor Wawancara", "Status (LULUS/TIDAK LULUS)"], 
+            ["1985010101", "90", "LULUS"],
+            ["1985010102", "85", "TIDAK LULUS"]
+        ]; 
+        var ws = XLSX.utils.aoa_to_sheet(ws_data); 
+        
+        // Mengatur lebar kolom agar rapi
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}];
+        
+        XLSX.utils.book_append_sheet(wb, ws, "Template_Nilai_Akhir"); 
+        XLSX.writeFile(wb, "Template_Upload_Nilai_Akhir.xlsx"); 
     }
     
     function bukaInputWawancara(nip, nama, skor, status) {
