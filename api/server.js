@@ -202,16 +202,36 @@ case 'loginUser':
         result = "Pengumuman berhasil dihapus!";
         break;
 
-      case 'getSemuaUsers':
+ case 'getSemuaUsers':
         const { rows: rUsers } = await db.execute("SELECT * FROM users");
         result = rUsers.map(u => ({ 
             row: u.nip, role: u.role, nip: u.nip, nik: u.nik, nama: u.nama, 
             skor_kepribadian: u.skor_kepribadian || '', skor_profesional: u.skor_profesional || '', 
             skor_sosial: u.skor_sosial || '', skor_total: u.skor_total || '', status_lulus_cat: u.status_lulus_cat || '',
-            skor_wawancara: u.skor_wawancara || '', status_wawancara: u.status_wawancara || ''
+            skor_administrasi: u.skor_administrasi || '', skor_wawancara: u.skor_wawancara || '', status_wawancara: u.status_wawancara || ''
         }));
         break;
-      
+
+      case 'saveNilaiWawancara':
+        // Menyimpan nilai Administrasi, Wawancara, dan Status
+        await db.execute({ sql: "UPDATE users SET skor_administrasi=?, skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [args[1], args[2], args[3], args[0]] });
+        result = "Nilai Akhir berhasil disimpan";
+        break;
+
+      case 'uploadExcelNilaiWawancara':
+        let excelWw = args[0]; let cWw = 0;
+        for (let row of excelWw) {
+            if (row && row.length >= 1 && row[0]) {
+                let uNip = String(row[0]).trim();
+                let skorAdm = row[1] ? String(row[1]).trim() : '';
+                let skorW = row[2] ? String(row[2]).trim() : '';
+                let statW = row[3] ? String(row[3]).trim() : '';
+                await db.execute({ sql: "UPDATE users SET skor_administrasi=?, skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [skorAdm, skorW, statW, uNip] });
+                cWw++;
+            }
+        }
+        result = cWw + " Data nilai akhir berhasil diimpor.";
+        break;      
       case 'addUserDB':
         // Menyimpan role baru (Pegawai atau Penguji)
         await db.execute({ sql: "INSERT INTO users (role, nip, nik, nama) VALUES (?, ?, ?, ?)", args: [args[3] || 'Pegawai', args[0], args[1], args[2]] });
@@ -222,26 +242,6 @@ case 'loginUser':
         // Memperbarui role
         await db.execute({ sql: "UPDATE users SET nip=?, nik=?, nama=?, role=? WHERE nip=?", args: [args[1], args[2], args[3], args[4] || 'Pegawai', args[0]] });
         result = "Data User berhasil diupdate";
-        break;
-
-    
-      case 'saveNilaiWawancara':
-        await db.execute({ sql: "UPDATE users SET skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [args[1], args[2], args[0]] });
-        result = "Nilai wawancara berhasil disimpan";
-        break;
-
-      case 'uploadExcelNilaiWawancara':
-        let excelWw = args[0]; let cWw = 0;
-        for (let row of excelWw) {
-            if (row && row.length >= 1 && row[0]) {
-                let uNip = String(row[0]).trim();
-                let skorW = row[1] ? String(row[1]).trim() : '';
-                let statW = row[2] ? String(row[2]).trim() : '';
-                await db.execute({ sql: "UPDATE users SET skor_wawancara=?, status_wawancara=? WHERE nip=?", args: [skorW, statW, uNip] });
-                cWw++;
-            }
-        }
-        result = cWw + " Data nilai wawancara berhasil diimpor.";
         break;
 
       case 'deleteUserDB':
